@@ -298,6 +298,7 @@
     <button class="nav-btn active" data-page="dashboard"><span class="icon">⊞</span> Dashboard</button>
     <button class="nav-btn" data-page="transactions"><span class="icon">↕</span> Transactions</button>
     <button class="nav-btn" data-page="add"><span class="icon">+</span> Add entry</button>
+    <button class="nav-btn" data-page="paye"><span class="icon">£</span> PAYE calc</button>
     <button class="nav-btn" data-page="import"><span class="icon">↑</span> Import CSV</button>
     <button class="nav-btn" data-page="settings"><span class="icon">⚙</span> Settings</button>
   </nav>
@@ -416,23 +417,101 @@
       </div>
     </div>
 
+    <!-- ── PAYE CALCULATOR ── -->
+    <div class="page" id="page-paye">
+      <div class="page-title">PAYE back-calculator</div>
+      <div class="page-sub">Enter your net (take-home) pay to estimate the gross salary and tax deducted. Uses UK 2024–25 bands.</div>
+
+      <div class="card" style="max-width:540px">
+        <div class="section-title">Your employment income</div>
+
+        <div class="form-row">
+          <label>Net pay received (£) — what actually hit your bank</label>
+          <input type="number" id="paye-net" min="0" step="0.01" placeholder="e.g. 28000" oninput="calcPaye()">
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Pay period</label>
+            <select id="paye-period" onchange="calcPaye()">
+              <option value="annual">Annual</option>
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Student loan plan</label>
+            <select id="paye-sl" onchange="calcPaye()">
+              <option value="none">None</option>
+              <option value="plan1">Plan 1</option>
+              <option value="plan2">Plan 2</option>
+              <option value="plan4">Plan 4 (Scotland)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Pension contribution (% of gross, employee side)</label>
+          <input type="number" id="paye-pension" min="0" max="50" step="0.5" value="0" placeholder="e.g. 5" oninput="calcPaye()">
+        </div>
+
+        <!-- Result panel — hidden until calc runs -->
+        <div id="paye-result" style="display:none;margin-top:4px">
+          <hr>
+          <div class="section-title" style="margin-top:16px">Estimated breakdown (annual)</div>
+          <table style="width:100%;font-size:13px;border-collapse:collapse">
+            <tbody id="paye-rows"></tbody>
+          </table>
+          <div style="margin-top:16px;padding:14px;background:var(--surface);border-radius:var(--radius)">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:6px">Estimated gross salary</div>
+            <div style="font-size:28px;font-weight:300;color:var(--accent)" id="paye-gross-big">—</div>
+            <div style="font-size:12px;color:var(--ink-2);margin-top:4px" id="paye-period-note"></div>
+          </div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:12px">
+            ⚠ This is an estimate based on standard UK allowances. It does not account for tax code adjustments, benefits-in-kind, or prior-year underpayments. Always check your P60 for the exact figures.
+          </div>
+          <div style="margin-top:16px">
+            <button class="btn-success" onclick="addPayeAsEntry()">Add gross as income entry →</button>
+            <span id="paye-add-feedback" style="font-size:13px;color:var(--accent);margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── IMPORT CSV ── -->
     <div class="page" id="page-import">
       <div class="page-title">Import CSV</div>
-      <div class="page-sub">Upload a bank export. You can re-categorise after import.</div>
+      <div class="page-sub">Upload a bank export or sync from a published Google Sheet. Duplicates are detected and skipped automatically.</div>
 
-      <div class="alert alert-info" style="max-width:600px">
-        Expected columns (in any order): <strong>Date, Description, Amount</strong>.
-        Negative amounts = expenses, positive = income. A Category column is optional.
+      <!-- ① Google Sheets URL sync -->
+      <div class="card" style="max-width:620px">
+        <div class="section-title">① Monzo / Google Sheets — URL sync</div>
+        <div class="alert alert-info" style="margin-bottom:14px">
+          In Google Sheets: <strong>File → Share → Publish to web → select your sheet → CSV → Publish</strong>. Paste the URL below. Re-syncing will skip rows already imported.
+        </div>
+        <div class="form-row">
+          <label>Published CSV URL</label>
+          <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv">
+        </div>
+        <div class="flex-row">
+          <button class="btn-primary" onclick="syncGoogleSheet()">Sync now</button>
+          <button onclick="saveSheetUrl()" class="btn-sm">Save URL for later</button>
+          <span id="sheet-feedback" style="font-size:13px;color:var(--accent)"></span>
+        </div>
       </div>
 
-      <div class="upload-zone" onclick="document.getElementById('csvFile').click()" style="max-width:600px">
-        <span class="icon">📂</span>
-        Click to choose a CSV file, or drag and drop here
-        <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCsvUpload(event)">
+      <!-- ② File upload -->
+      <div class="card" style="max-width:620px">
+        <div class="section-title">② Upload CSV file (HSBC, Monzo export, etc.)</div>
+        <div class="alert alert-info" style="margin-bottom:14px">
+          Expected columns (any order): <strong>Date, Description, Amount</strong>. Negative = expense, positive = income. Re-uploading the same file is safe — duplicates are skipped.
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('csvFile').click()">
+          <span class="icon">📂</span>
+          Click to choose a CSV file, or drag and drop here
+          <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCsvUpload(event)">
+        </div>
       </div>
 
-      <div id="csv-preview" style="margin-top:20px"></div>
+      <div id="csv-preview" style="margin-top:4px"></div>
     </div>
 
     <!-- ── SETTINGS ── -->
@@ -608,9 +687,22 @@ function renderPage(p) {
   if (p === 'dashboard')    renderDashboard();
   if (p === 'transactions') renderTransactions();
   if (p === 'add')          renderAddPage();
+  if (p === 'paye')         renderPayePage();
+  if (p === 'import')       renderImportPage();
   if (p === 'settings')     renderSettings();
 }
 
+function renderPayePage() {
+  // Calculator is event-driven; nothing to pre-render
+}
+
+function renderImportPage() {
+  // Restore saved Google Sheet URL if stored
+  if (state.sheetUrl) {
+    const el = document.getElementById('sheet-url');
+    if (el && !el.value) el.value = state.sheetUrl;
+  }
+}
 // ════════════════════════════════════════════════════════════════
 //  FORMAT HELPERS
 // ════════════════════════════════════════════════════════════════
@@ -862,96 +954,295 @@ document.getElementById('editModal').addEventListener('click', e => {
 });
 
 // ════════════════════════════════════════════════════════════════
-//  IMPORT CSV
+//  PAYE BACK-CALCULATOR
+//  UK 2024-25 bands. Edit thresholds here each April if needed.
+// ════════════════════════════════════════════════════════════════
+const PAYE_CONFIG = {
+  personalAllowance: 12570,
+  basicRateLimit:    50270,   // PA + basic band
+  higherRateLimit:   125140,  // taper starts here
+  basicRate:         0.20,
+  higherRate:        0.40,
+  additionalRate:    0.45,
+  // NI employee 2024-25 (Class 1)
+  niPrimThreshold:   12570,
+  niUpperEarnings:   50270,
+  niMain:            0.08,    // 8% between thresholds
+  niUpper:           0.02,    // 2% above upper
+  // Student loan thresholds (annual)
+  studentLoan: {
+    plan1: { threshold: 24990, rate: 0.09 },
+    plan2: { threshold: 27295, rate: 0.09 },
+    plan4: { threshold: 31395, rate: 0.09 },
+    none:  { threshold: Infinity, rate: 0 },
+  },
+};
+
+function calcPaye() {
+  const netInput  = parseFloat(document.getElementById('paye-net').value) || 0;
+  const period    = document.getElementById('paye-period').value;
+  const slPlan    = document.getElementById('paye-sl').value;
+  const pensionPc = (parseFloat(document.getElementById('paye-pension').value) || 0) / 100;
+
+  if (!netInput) { document.getElementById('paye-result').style.display = 'none'; return; }
+
+  // Convert net to annual
+  const multiplier = period === 'monthly' ? 12 : period === 'weekly' ? 52 : 1;
+  const annualNet  = netInput * multiplier;
+
+  // Iterative gross finder: start with net as guess, converge
+  let gross = annualNet;
+  for (let i = 0; i < 50; i++) {
+    const { tax, ni, sl, pension } = deductionsFromGross(gross, slPlan, pensionPc);
+    const computedNet = gross - tax - ni - sl - pension;
+    const diff = annualNet - computedNet;
+    if (Math.abs(diff) < 0.01) break;
+    gross += diff * 0.95; // damped step to avoid oscillation
+    if (gross < 0) { gross = 0; break; }
+  }
+
+  const { tax, ni, sl, pension } = deductionsFromGross(gross, slPlan, pensionPc);
+  const effectiveRate = gross > 0 ? ((tax + ni) / gross * 100) : 0;
+
+  // Display
+  const rows = [
+    ['Estimated gross salary',    gross,              'green'],
+    ['Income tax',                tax,                'red'],
+    ['National Insurance (Cl.1)', ni,                 'red'],
+    ['Student loan repayment',    sl,                 sl > 0 ? 'red' : ''],
+    ['Pension contribution',      pension,            pension > 0 ? 'red' : ''],
+    ['Net take-home (annual)',     gross-tax-ni-sl-pension, 'blue'],
+    [`Effective rate (tax+NI)`,   null,               ''],
+  ];
+
+  document.getElementById('paye-rows').innerHTML = rows.map(([label, val, cls]) => `
+    <tr style="border-bottom:1px solid var(--line)">
+      <td style="padding:8px 4px;color:var(--ink-2)">${label}</td>
+      <td style="padding:8px 4px;text-align:right;font-weight:500;color:${cls === 'green' ? 'var(--accent)' : cls === 'red' ? 'var(--warn)' : cls === 'blue' ? 'var(--info)' : 'var(--ink)'}">
+        ${val !== null ? fmtGBP(val) : effectiveRate.toFixed(1) + '%'}
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('paye-gross-big').textContent    = fmtGBP(gross);
+  document.getElementById('paye-period-note').textContent  =
+    period !== 'annual' ? `(${fmtGBP(gross / multiplier)} per ${period === 'monthly' ? 'month' : 'week'})` : '';
+  document.getElementById('paye-result').style.display     = 'block';
+
+  // Store for "add as entry" button
+  window._payeGross = gross;
+}
+
+function deductionsFromGross(gross, slPlan, pensionPc) {
+  const C = PAYE_CONFIG;
+  const pension = gross * pensionPc;
+  const taxableGross = gross - pension; // simplified: pension reduces taxable pay
+
+  // Income tax
+  let tax = 0;
+  const pa = taxableGross > 100000 ? Math.max(0, C.personalAllowance - (taxableGross - 100000) / 2) : C.personalAllowance;
+  const taxable = Math.max(0, taxableGross - pa);
+  if (taxable > 0) {
+    const basic   = Math.min(taxable, C.basicRateLimit - C.personalAllowance);
+    const higher  = Math.min(Math.max(0, taxable - basic), C.higherRateLimit - C.basicRateLimit);
+    const addl    = Math.max(0, taxable - basic - higher);
+    tax = basic * C.basicRate + higher * C.higherRate + addl * C.additionalRate;
+  }
+
+  // NI
+  let ni = 0;
+  if (gross > C.niPrimThreshold) {
+    const mainBand  = Math.min(gross, C.niUpperEarnings) - C.niPrimThreshold;
+    const upperBand = Math.max(0, gross - C.niUpperEarnings);
+    ni = mainBand * C.niMain + upperBand * C.niUpper;
+  }
+
+  // Student loan
+  const sl_cfg = C.studentLoan[slPlan] || C.studentLoan.none;
+  const sl = Math.max(0, gross - sl_cfg.threshold) * sl_cfg.rate;
+
+  return { tax, ni, sl, pension };
+}
+
+function addPayeAsEntry() {
+  if (!window._payeGross) return;
+  const period = document.getElementById('paye-period').value;
+  const multiplier = period === 'monthly' ? 12 : period === 'weekly' ? 52 : 1;
+  // Store as monthly entries for the current tax year
+  const ty   = selectedTaxYear();
+  const months = [];
+  for (let m = 0; m < 12; m++) {
+    // Tax year starts April (month index 3), shift accordingly
+    const date = new Date(ty, 3 + m, 15); // 15th of each month
+    months.push(date.toISOString().split('T')[0]);
+  }
+  const perMonth = window._payeGross / 12;
+  months.forEach(date => {
+    state.transactions.push({
+      id: uid(), date,
+      amount: Math.round(perMonth * 100) / 100,
+      description: 'PAYE employment income (estimated gross)',
+      category: state.incomeCategories.find(c => c.toLowerCase().includes('paye') || c.toLowerCase().includes('employ')) || state.incomeCategories[0],
+      type: 'income',
+      notes: `Back-calculated from net. Gross annual: ${fmtGBP(window._payeGross)}`,
+    });
+  });
+  save();
+  document.getElementById('paye-add-feedback').textContent = '12 monthly entries added ✓';
+  setTimeout(() => document.getElementById('paye-add-feedback').textContent = '', 3000);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  IMPORT — DUPLICATE DETECTION
+//  A transaction is a duplicate if date + description + amount match
+// ════════════════════════════════════════════════════════════════
+function isDuplicate(row) {
+  return state.transactions.some(t =>
+    t.date === row.date &&
+    Math.abs(t.amount - row.amount) < 0.005 &&
+    t.description.toLowerCase().trim() === row.description.toLowerCase().trim()
+  );
+}
+
+function dedupKey(row) {
+  return `${row.date}|${Math.round(row.amount * 100)}|${row.description.toLowerCase().trim()}`;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  IMPORT — GOOGLE SHEETS URL SYNC
+// ════════════════════════════════════════════════════════════════
+function saveSheetUrl() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) return;
+  state.sheetUrl = url;
+  save();
+  document.getElementById('sheet-feedback').textContent = 'URL saved ✓';
+  setTimeout(() => document.getElementById('sheet-feedback').textContent = '', 2000);
+}
+
+async function syncGoogleSheet() {
+  const url = document.getElementById('sheet-url').value.trim() || state.sheetUrl || '';
+  if (!url) { alert('Please paste a Google Sheets published CSV URL first.'); return; }
+
+  // Ensure output=csv is in the URL
+  const fetchUrl = url.includes('output=') ? url : url + (url.includes('?') ? '&' : '?') + 'output=csv';
+
+  document.getElementById('sheet-feedback').textContent = 'Fetching…';
+  try {
+    const res  = await fetch(fetchUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    processCsvText(text, 'Google Sheet');
+    document.getElementById('sheet-feedback').textContent = '';
+    state.sheetUrl = url;
+    save();
+  } catch (err) {
+    document.getElementById('sheet-feedback').textContent = '';
+    document.getElementById('csv-preview').innerHTML =
+      `<div class="alert alert-warn">Could not fetch the sheet. Make sure it is published to web as CSV and the URL is correct.<br><small>${escHtml(err.message)}</small></div>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  IMPORT — FILE UPLOAD
 // ════════════════════════════════════════════════════════════════
 function handleCsvUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
-    const rows  = parseCsv(ev.target.result);
-    const preview = document.getElementById('csv-preview');
-    if (!rows.length) { preview.innerHTML = '<div class="alert alert-warn">No rows found. Check the file format.</div>'; return; }
-
-    // Map columns (case-insensitive header match)
-    const header = rows[0].map(h => h.toLowerCase().trim());
-    const col = name => header.indexOf(name);
-    const dateIdx   = col('date');
-    const descIdx   = col('description') !== -1 ? col('description') : col('name') !== -1 ? col('name') : col('narrative');
-    const amtIdx    = col('amount') !== -1 ? col('amount') : col('value');
-    const catIdx    = col('category');
-
-    if (dateIdx === -1 || descIdx === -1 || amtIdx === -1) {
-      preview.innerHTML = '<div class="alert alert-warn">Could not find Date, Description, or Amount columns. Please check your CSV headers.</div>';
-      return;
-    }
-
-    const pending = rows.slice(1).filter(r => r.length > amtIdx && r[amtIdx]).map(row => {
-      const rawAmt = parseFloat(row[amtIdx].replace(/[£,\s]/g, ''));
-      return {
-        id:          uid(),
-        date:        normaliseDate(row[dateIdx]),
-        description: (row[descIdx] || '').trim(),
-        amount:      Math.abs(rawAmt),
-        type:        rawAmt >= 0 ? 'income' : 'expense',
-        category:    catIdx !== -1 ? row[catIdx] : (rawAmt >= 0 ? state.incomeCategories[0] : state.expenseCategories[0]),
-        notes:       '',
-      };
-    }).filter(r => r.date && r.amount > 0);
-
-    // Show preview table with editable categories
-    preview.innerHTML = `
-      <div class="card">
-        <div class="section-title">${pending.length} rows ready to import</div>
-        <div class="tbl-wrap">
-          <table id="import-preview-table">
-            <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Type</th><th>Category</th></tr></thead>
-            <tbody>
-              ${pending.map((r,i) => `
-                <tr>
-                  <td>${fmtDate(r.date)}</td>
-                  <td>${escHtml(r.description)}</td>
-                  <td style="color:${r.type === 'income' ? 'var(--accent)':'var(--warn)'}">
-                    ${r.type === 'expense' ? '−' : '+'}${fmtGBP(r.amount)}
-                  </td>
-                  <td>
-                    <select class="inline-select" id="imp-type-${i}" onchange="updateImportType(${i})">
-                      <option value="income" ${r.type === 'income' ? 'selected':''}>Income</option>
-                      <option value="expense" ${r.type === 'expense' ? 'selected':''}>Expense</option>
-                    </select>
-                  </td>
-                  <td>
-                    <select class="inline-select" id="imp-cat-${i}">
-                      ${allCategoryOptions(r.category)}
-                    </select>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-        <div style="margin-top:14px;display:flex;gap:10px">
-          <button class="btn-primary" onclick="confirmImport(${JSON.stringify(pending).replace(/"/g, '&quot;')})">Import all</button>
-          <button onclick="document.getElementById('csv-preview').innerHTML=''">Cancel</button>
-        </div>
-      </div>
-    `;
-    window._importPending = pending;
-  };
+  reader.onload = ev => processCsvText(ev.target.result, file.name);
   reader.readAsText(file);
   e.target.value = '';
 }
 
+function processCsvText(text, sourceName) {
+  const preview = document.getElementById('csv-preview');
+  const rows    = parseCsv(text);
+  if (!rows.length) { preview.innerHTML = '<div class="alert alert-warn">No rows found. Check the file format.</div>'; return; }
+
+  const header  = rows[0].map(h => h.toLowerCase().trim());
+  const col     = name => header.indexOf(name);
+  const dateIdx = col('date');
+  const descIdx = ['description','name','narrative','payee','memo'].map(col).find(i => i !== -1) ?? -1;
+  const amtIdx  = ['amount','value','credit/debit','net amount'].map(col).find(i => i !== -1) ?? -1;
+  const catIdx  = col('category');
+
+  if (dateIdx === -1 || descIdx === -1 || amtIdx === -1) {
+    preview.innerHTML = `<div class="alert alert-warn">Could not find Date, Description, or Amount columns in <em>${escHtml(sourceName)}</em>. Headers found: <code>${escHtml(header.join(', '))}</code></div>`;
+    return;
+  }
+
+  const allRows = rows.slice(1).filter(r => r.length > amtIdx && r[amtIdx]).map(row => {
+    const rawAmt = parseFloat(row[amtIdx].replace(/[£,\s]/g, '')) || 0;
+    return {
+      id:          uid(),
+      date:        normaliseDate(row[dateIdx]),
+      description: (row[descIdx] || '').trim(),
+      amount:      Math.abs(rawAmt),
+      type:        rawAmt >= 0 ? 'income' : 'expense',
+      category:    catIdx !== -1 && row[catIdx] ? row[catIdx].trim() : (rawAmt >= 0 ? state.incomeCategories[0] : state.expenseCategories[0]),
+      notes:       '',
+    };
+  }).filter(r => r.date && r.amount > 0);
+
+  // Split into new vs duplicates
+  const newRows  = allRows.filter(r => !isDuplicate(r));
+  const dupCount = allRows.length - newRows.length;
+
+  if (!newRows.length) {
+    preview.innerHTML = `<div class="alert alert-info">All ${allRows.length} rows already exist — nothing new to import.</div>`;
+    return;
+  }
+
+  // Store for confirmImport
+  window._importPending = newRows;
+
+  preview.innerHTML = `
+    <div class="card" style="max-width:760px">
+      <div class="section-title">
+        ${newRows.length} new rows from <em>${escHtml(sourceName)}</em>
+        ${dupCount > 0 ? `<span style="font-weight:400;text-transform:none;color:var(--ink-2);font-size:12px">&nbsp;· ${dupCount} duplicate${dupCount>1?'s':''} skipped</span>` : ''}
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Type</th><th>Category</th></tr></thead>
+          <tbody>
+            ${newRows.map((r, i) => `
+              <tr>
+                <td>${fmtDate(r.date)}</td>
+                <td>${escHtml(r.description)}</td>
+                <td style="color:${r.type==='income'?'var(--accent)':'var(--warn)'}">
+                  ${r.type==='expense'?'−':'+'}${fmtGBP(r.amount)}
+                </td>
+                <td>
+                  <select class="inline-select" id="imp-type-${i}" onchange="updateImportType(${i})">
+                    <option value="income"  ${r.type==='income' ?'selected':''}>Income</option>
+                    <option value="expense" ${r.type==='expense'?'selected':''}>Expense</option>
+                  </select>
+                </td>
+                <td>
+                  <select class="inline-select" id="imp-cat-${i}">${allCategoryOptions(r.category)}</select>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+        <button class="btn-primary" onclick="confirmImport()">Import ${newRows.length} rows</button>
+        <button onclick="document.getElementById('csv-preview').innerHTML=''">Cancel</button>
+      </div>
+    </div>`;
+}
+
 function updateImportType(i) {
   const type = document.getElementById(`imp-type-${i}`).value;
-  const catSel = document.getElementById(`imp-cat-${i}`);
-  catSel.innerHTML = allCategoryOptions(
+  document.getElementById(`imp-cat-${i}`).innerHTML = allCategoryOptions(
     type === 'income' ? state.incomeCategories[0] : state.expenseCategories[0]
   );
 }
 
-function confirmImport(pending) {
-  // Read live values from select dropdowns
+function confirmImport() {
+  const pending = window._importPending || [];
   pending.forEach((r, i) => {
     r.type     = document.getElementById(`imp-type-${i}`).value;
     r.category = document.getElementById(`imp-cat-${i}`).value;
@@ -959,7 +1250,8 @@ function confirmImport(pending) {
   state.transactions.push(...pending);
   save();
   document.getElementById('csv-preview').innerHTML =
-    `<div class="alert alert-info">Imported ${pending.length} transactions.</div>`;
+    `<div class="alert alert-info">Imported ${pending.length} transactions. You can sync again anytime — duplicates will be skipped.</div>`;
+  window._importPending = [];
 }
 
 function parseCsv(text) {
