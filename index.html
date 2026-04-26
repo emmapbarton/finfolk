@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>finfolk — Personal Finance for Everyone</title>
+<title>Ledger — Personal Finance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -380,36 +380,128 @@
     <div class="page" id="page-add">
       <div class="page-title">Add entry</div>
       <div class="page-sub">Manually log income or an expense</div>
-      <div class="card" style="max-width:500px">
+      <div class="card" style="max-width:520px">
+
+        <!-- Type toggle -->
         <div class="form-row">
           <label>Type</label>
-          <select id="add-type">
+          <select id="add-type" onchange="onAddTypeChange()">
             <option value="income">Income</option>
             <option value="expense">Expense</option>
           </select>
         </div>
+
         <div class="form-grid">
           <div class="form-row">
             <label>Date</label>
             <input type="date" id="add-date">
           </div>
           <div class="form-row">
-            <label>Amount (£)</label>
-            <input type="number" id="add-amount" min="0" step="0.01" placeholder="0.00">
+            <label>Category</label>
+            <select id="add-cat"></select>
           </div>
         </div>
+
         <div class="form-row">
           <label>Description</label>
           <input type="text" id="add-desc" placeholder="e.g. PreQlinic June invoice">
         </div>
-        <div class="form-row">
-          <label>Category</label>
-          <select id="add-cat"></select>
+
+        <!-- ── INCOME-ONLY: gross/net mode ── -->
+        <div id="add-income-section">
+          <div style="background:var(--surface);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:10px">How are you entering this income?</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="radio" name="add-income-mode" value="gross-only" checked onchange="onIncomeModeChange()">
+                I know my gross
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="radio" name="add-income-mode" value="gross-and-tax" onchange="onIncomeModeChange()">
+                I know gross + exact tax
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="radio" name="add-income-mode" value="net-backcalc" onchange="onIncomeModeChange()">
+                I only know my net (back-calculate)
+              </label>
+            </div>
+          </div>
+
+          <!-- Mode A: gross only -->
+          <div id="add-mode-gross-only">
+            <div class="form-row">
+              <label>Gross amount (£) — before any tax</label>
+              <input type="number" id="add-gross-only" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onGrossOnlyInput()">
+            </div>
+            <div id="add-gross-only-hint" style="font-size:12px;color:var(--ink-2);margin-top:-8px;margin-bottom:14px;display:none">
+              Tax reserve (at dashboard rate): <strong id="add-gross-only-taxhint"></strong> &nbsp;·&nbsp; Estimated net: <strong id="add-gross-only-nethint"></strong>
+            </div>
+          </div>
+
+          <!-- Mode B: gross + exact tax -->
+          <div id="add-mode-gross-and-tax" style="display:none">
+            <div class="form-grid">
+              <div class="form-row">
+                <label>Gross amount (£)</label>
+                <input type="number" id="add-gross-b" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onGrossTaxInput()">
+              </div>
+              <div class="form-row">
+                <label>Tax withheld (£)</label>
+                <input type="number" id="add-taxwithheld" min="0" step="0.01" placeholder="e.g. 600.00" oninput="onGrossTaxInput()">
+              </div>
+            </div>
+            <div id="add-gt-result" style="display:none;background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:13px">
+              Net to bank: <strong id="add-gt-net"></strong> &nbsp;·&nbsp; Effective rate: <strong id="add-gt-rate"></strong>
+            </div>
+          </div>
+
+          <!-- Mode C: net back-calculate -->
+          <div id="add-mode-net-backcalc" style="display:none">
+            <div class="form-row">
+              <label>Net received (£) — amount that hit your bank</label>
+              <input type="number" id="add-net-c" min="0" step="0.01" placeholder="e.g. 2400.00" oninput="onNetBackcalcInput()">
+            </div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label>Student loan</label>
+                <select id="add-sl-c" onchange="onNetBackcalcInput()">
+                  <option value="none">None</option>
+                  <option value="plan1">Plan 1</option>
+                  <option value="plan2">Plan 2</option>
+                  <option value="plan4">Plan 4</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Pension % (employee)</label>
+                <input type="number" id="add-pension-c" min="0" max="50" step="0.5" value="0" oninput="onNetBackcalcInput()">
+              </div>
+            </div>
+            <div id="add-bc-result" style="display:none;background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:13px">
+              Estimated gross: <strong id="add-bc-gross" style="color:var(--accent)"></strong>
+              &nbsp;·&nbsp; Tax: <strong id="add-bc-tax" style="color:var(--warn)"></strong>
+              &nbsp;·&nbsp; NI: <strong id="add-bc-ni" style="color:var(--warn)"></strong>
+              <br><span style="font-size:11px;color:var(--ink-3);margin-top:4px;display:block">Override gross below if you know the real figure</span>
+            </div>
+            <div class="form-row">
+              <label>Gross override (£) — leave blank to use calculated value</label>
+              <input type="number" id="add-gross-override" min="0" step="0.01" placeholder="Optional override…">
+            </div>
+          </div>
         </div>
+
+        <!-- ── EXPENSE-ONLY: simple amount ── -->
+        <div id="add-expense-section" style="display:none">
+          <div class="form-row">
+            <label>Amount (£)</label>
+            <input type="number" id="add-expense-amount" min="0" step="0.01" placeholder="0.00">
+          </div>
+        </div>
+
         <div class="form-row">
           <label>Notes (optional)</label>
           <textarea id="add-notes" rows="2" placeholder="Any extra detail…"></textarea>
         </div>
+
         <div class="flex-row">
           <button class="btn-primary" onclick="saveEntry()">Save entry</button>
           <span id="add-feedback" style="font-size:13px;color:var(--accent)"></span>
@@ -736,13 +828,17 @@ function renderDashboard() {
   const profit   = income - expenses;
   const rate     = parseFloat(document.getElementById('taxRateSelect').value);
   const tax      = Math.max(0, profit * rate);
+  // Sum any exactly-known tax withheld recorded on entries
+  const taxKnown = txns.filter(t => t.type === 'income' && t.taxWithheld)
+                       .reduce((s, t) => s + (t.taxWithheld || 0), 0);
 
   // Stats
   document.getElementById('dash-stats').innerHTML = `
-    <div class="stat"><div class="stat-label">Total income</div><div class="stat-value green">${fmtGBP(income)}</div></div>
+    <div class="stat"><div class="stat-label">Total income (gross)</div><div class="stat-value green">${fmtGBP(income)}</div></div>
     <div class="stat"><div class="stat-label">Total expenses</div><div class="stat-value red">${fmtGBP(expenses)}</div></div>
     <div class="stat"><div class="stat-label">Net profit</div><div class="stat-value ${profit >= 0 ? 'blue' : 'red'}">${(profit < 0 ? '−' : '') + fmtGBP(profit)}</div></div>
     <div class="stat"><div class="stat-label">Tax reserve est.</div><div class="stat-value gold">${fmtGBP(tax)}</div></div>
+    ${taxKnown > 0 ? `<div class="stat"><div class="stat-label">Tax already withheld</div><div class="stat-value gold">${fmtGBP(taxKnown)}</div></div>` : ''}
   `;
 
   // Category bars — income
@@ -785,7 +881,12 @@ function renderDashboard() {
     </div>
     <div class="tax-bar-wrap"><div class="tax-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
     <div style="font-size:20px;font-weight:300;color:var(--gold);margin-top:8px">${fmtGBP(tax)}</div>
-    <div style="font-size:12px;color:var(--ink-3);margin-top:4px">
+    ${taxKnown > 0 ? `
+    <div style="margin-top:10px;padding:10px 12px;background:var(--gold-bg);border-radius:var(--radius);font-size:13px;color:var(--gold)">
+      Of this, <strong>${fmtGBP(taxKnown)}</strong> has already been withheld at source —
+      you may need to set aside <strong>${fmtGBP(Math.max(0, tax - taxKnown))}</strong> more.
+    </div>` : ''}
+    <div style="font-size:12px;color:var(--ink-3);margin-top:10px">
       This is a rough estimate only — consult an accountant before filing.
     </div>
   `;
@@ -873,40 +974,163 @@ function deleteTxn(id) {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  ADD ENTRY
+//  ADD ENTRY — gross / net / tax-aware
 // ════════════════════════════════════════════════════════════════
 function renderAddPage() {
   document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
-  populateCatSelect('add-cat', document.getElementById('add-type').value);
+  populateCatSelect('add-cat', 'income');
+  onAddTypeChange();
 }
 
-document.getElementById('add-type').onchange = function() {
-  populateCatSelect('add-cat', this.value);
-};
+function onAddTypeChange() {
+  const type = document.getElementById('add-type').value;
+  populateCatSelect('add-cat', type);
+  document.getElementById('add-income-section').style.display  = type === 'income'  ? '' : 'none';
+  document.getElementById('add-expense-section').style.display = type === 'expense' ? '' : 'none';
+}
+
+function onIncomeModeChange() {
+  const mode = document.querySelector('input[name="add-income-mode"]:checked').value;
+  document.getElementById('add-mode-gross-only').style.display    = mode === 'gross-only'    ? '' : 'none';
+  document.getElementById('add-mode-gross-and-tax').style.display = mode === 'gross-and-tax' ? '' : 'none';
+  document.getElementById('add-mode-net-backcalc').style.display  = mode === 'net-backcalc'  ? '' : 'none';
+}
+
+// Mode A: show live tax-reserve hint as user types gross
+function onGrossOnlyInput() {
+  const gross = parseFloat(document.getElementById('add-gross-only').value) || 0;
+  const hint  = document.getElementById('add-gross-only-hint');
+  if (!gross) { hint.style.display = 'none'; return; }
+  const rate    = parseFloat(document.getElementById('taxRateSelect').value) || 0.28;
+  const taxEst  = gross * rate;
+  const netEst  = gross - taxEst;
+  document.getElementById('add-gross-only-taxhint').textContent = fmtGBP(taxEst);
+  document.getElementById('add-gross-only-nethint').textContent = fmtGBP(netEst);
+  hint.style.display = '';
+}
+
+// Mode B: gross + exact tax withheld
+function onGrossTaxInput() {
+  const gross = parseFloat(document.getElementById('add-gross-b').value) || 0;
+  const tax   = parseFloat(document.getElementById('add-taxwithheld').value) || 0;
+  const res   = document.getElementById('add-gt-result');
+  if (!gross) { res.style.display = 'none'; return; }
+  const net  = gross - tax;
+  const rate = gross > 0 ? (tax / gross * 100) : 0;
+  document.getElementById('add-gt-net').textContent  = fmtGBP(net);
+  document.getElementById('add-gt-rate').textContent = rate.toFixed(1) + '%';
+  res.style.display = '';
+}
+
+// Mode C: net → back-calculate gross
+function onNetBackcalcInput() {
+  const net     = parseFloat(document.getElementById('add-net-c').value) || 0;
+  const slPlan  = document.getElementById('add-sl-c').value;
+  const pension = (parseFloat(document.getElementById('add-pension-c').value) || 0) / 100;
+  const res     = document.getElementById('add-bc-result');
+  if (!net) { res.style.display = 'none'; return; }
+
+  // Reuse the same iterative solver from the PAYE calculator
+  let gross = net;
+  for (let i = 0; i < 60; i++) {
+    const { tax, ni, sl, pension: p } = deductionsFromGross(gross, slPlan, pension);
+    const computed = gross - tax - ni - sl - p;
+    const diff = net - computed;
+    if (Math.abs(diff) < 0.01) break;
+    gross += diff * 0.95;
+    if (gross < 0) { gross = 0; break; }
+  }
+  const { tax, ni } = deductionsFromGross(gross, slPlan, pension);
+
+  document.getElementById('add-bc-gross').textContent = fmtGBP(gross);
+  document.getElementById('add-bc-tax').textContent   = fmtGBP(tax);
+  document.getElementById('add-bc-ni').textContent    = fmtGBP(ni);
+  res.style.display = '';
+  window._addBcGross = gross;
+  window._addBcTax   = tax;
+  window._addBcNi    = ni;
+}
 
 function saveEntry() {
-  const date   = document.getElementById('add-date').value;
-  const amount = parseFloat(document.getElementById('add-amount').value);
-  const desc   = document.getElementById('add-desc').value.trim();
-  const cat    = document.getElementById('add-cat').value;
-  const type   = document.getElementById('add-type').value;
-  const notes  = document.getElementById('add-notes').value.trim();
+  const date  = document.getElementById('add-date').value;
+  const desc  = document.getElementById('add-desc').value.trim();
+  const cat   = document.getElementById('add-cat').value;
+  const type  = document.getElementById('add-type').value;
+  const notes = document.getElementById('add-notes').value.trim();
 
-  if (!date || !amount || !desc) {
-    document.getElementById('add-feedback').textContent = 'Please fill in date, amount, and description.';
-    document.getElementById('add-feedback').style.color = 'var(--warn)';
-    return;
+  if (!date || !desc) {
+    showAddFeedback('Please fill in date and description.', 'warn'); return;
   }
 
-  state.transactions.push({ id: uid(), date, amount, description: desc, category: cat, type, notes });
+  let amount, grossAmount, taxWithheld, netAmount, entryNotes = notes;
+
+  if (type === 'expense') {
+    amount = parseFloat(document.getElementById('add-expense-amount').value);
+    if (!amount) { showAddFeedback('Please enter an amount.', 'warn'); return; }
+    state.transactions.push({ id: uid(), date, amount, description: desc, category: cat, type, notes });
+
+  } else {
+    // Income — which mode?
+    const mode = document.querySelector('input[name="add-income-mode"]:checked').value;
+
+    if (mode === 'gross-only') {
+      grossAmount = parseFloat(document.getElementById('add-gross-only').value);
+      if (!grossAmount) { showAddFeedback('Please enter a gross amount.', 'warn'); return; }
+      const rate = parseFloat(document.getElementById('taxRateSelect').value) || 0.28;
+      taxWithheld = 0; // not known precisely — dashboard handles reserve
+      amount = grossAmount;
+      entryNotes = notes + (notes ? '\n' : '') + `Gross entry. Tax reserve est. at ${(rate*100).toFixed(0)}% via dashboard.`;
+
+    } else if (mode === 'gross-and-tax') {
+      grossAmount = parseFloat(document.getElementById('add-gross-b').value);
+      taxWithheld = parseFloat(document.getElementById('add-taxwithheld').value) || 0;
+      if (!grossAmount) { showAddFeedback('Please enter a gross amount.', 'warn'); return; }
+      netAmount   = grossAmount - taxWithheld;
+      amount      = grossAmount; // store gross as the canonical amount
+      entryNotes  = notes + (notes ? '\n' : '') +
+        `Gross: ${fmtGBP(grossAmount)} · Tax withheld: ${fmtGBP(taxWithheld)} · Net to bank: ${fmtGBP(netAmount)}`;
+
+    } else { // net-backcalc
+      const netVal  = parseFloat(document.getElementById('add-net-c').value);
+      if (!netVal) { showAddFeedback('Please enter the net amount received.', 'warn'); return; }
+      const override = parseFloat(document.getElementById('add-gross-override').value);
+      grossAmount    = override || window._addBcGross || netVal;
+      taxWithheld    = window._addBcTax  || 0;
+      const niAmt    = window._addBcNi   || 0;
+      netAmount      = netVal;
+      amount         = grossAmount;
+      entryNotes     = notes + (notes ? '\n' : '') +
+        `Net received: ${fmtGBP(netVal)} · Est. gross: ${fmtGBP(grossAmount)} · Est. tax: ${fmtGBP(taxWithheld)} · Est. NI: ${fmtGBP(niAmt)}${override ? ' · Gross manually overridden' : ''}`;
+    }
+
+    state.transactions.push({
+      id: uid(), date, amount, description: desc, category: cat, type,
+      notes: entryNotes,
+      grossAmount:  grossAmount  || amount,
+      taxWithheld:  taxWithheld  || 0,
+      netAmount:    netAmount    || amount,
+    });
+  }
+
   save();
 
-  document.getElementById('add-amount').value = '';
-  document.getElementById('add-desc').value   = '';
-  document.getElementById('add-notes').value  = '';
-  document.getElementById('add-feedback').textContent = 'Saved!';
-  document.getElementById('add-feedback').style.color = 'var(--accent)';
-  setTimeout(() => document.getElementById('add-feedback').textContent = '', 2000);
+  // Reset income fields
+  ['add-gross-only','add-gross-b','add-taxwithheld','add-net-c','add-gross-override','add-expense-amount']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('add-desc').value  = '';
+  document.getElementById('add-notes').value = '';
+  document.getElementById('add-gross-only-hint').style.display = 'none';
+  document.getElementById('add-gt-result').style.display       = 'none';
+  document.getElementById('add-bc-result').style.display       = 'none';
+  window._addBcGross = window._addBcTax = window._addBcNi = 0;
+  showAddFeedback('Saved ✓', 'accent');
+}
+
+function showAddFeedback(msg, tone) {
+  const el = document.getElementById('add-feedback');
+  el.textContent  = msg;
+  el.style.color  = tone === 'warn' ? 'var(--warn)' : 'var(--accent)';
+  if (tone !== 'warn') setTimeout(() => el.textContent = '', 2500);
 }
 
 // ════════════════════════════════════════════════════════════════
