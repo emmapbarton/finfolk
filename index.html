@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ledger — Personal Finance</title>
+<title>finfolk — Personal Finance for Everyone</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -300,6 +300,7 @@
     <button class="nav-btn" data-page="add"><span class="icon">+</span> Add entry</button>
     <button class="nav-btn" data-page="paye"><span class="icon">£</span> PAYE calc</button>
     <button class="nav-btn" data-page="import"><span class="icon">↑</span> Import CSV</button>
+    <button class="nav-btn" data-page="taxinfo"><span class="icon">✦</span> Tax Benefits</button>
     <button class="nav-btn" data-page="settings"><span class="icon">⚙</span> Settings</button>
   </nav>
 
@@ -646,6 +647,70 @@
   </main>
 </div>
 
+  <!-- ── TAX BENEFITS INFO PAGE ── -->
+<div class="page" id="page-taxinfo">
+  <div class="page-title">Tax Benefits & Allowances</div>
+  <div class="page-sub">UK 2024–25. Tick items as you review them. Set your profile to highlight what's relevant to you.</div>
+
+  <!-- Profile box -->
+  <div class="card" style="max-width:700px;margin-bottom:20px">
+    <div class="section-title">Your profile <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--ink-2)">— used to flag relevant items</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+      <div class="form-row" style="margin:0">
+        <label>Employment type</label>
+        <select id="tp-employment" onchange="saveProfile()">
+          <option value="sole_trader">Sole trader</option>
+          <option value="employed">Employed (PAYE)</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin:0">
+        <label>Tax band</label>
+        <select id="tp-band" onchange="saveProfile()">
+          <option value="basic">Basic (20%)</option>
+          <option value="higher">Higher (40%)</option>
+          <option value="additional">Additional (45%)</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin:0">
+        <label>Student loan</label>
+        <select id="tp-sl" onchange="saveProfile()">
+          <option value="none">None</option>
+          <option value="plan1">Plan 1</option>
+          <option value="plan2">Plan 2</option>
+          <option value="plan4">Plan 4</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin:0">
+        <label>Situation</label>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:2px">
+          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+            <input type="checkbox" id="tp-dogsitting" onchange="saveProfile()"> Dog sitting / side hustle
+          </label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+            <input type="checkbox" id="tp-married" onchange="saveProfile()"> Married / civil partnership
+          </label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+            <input type="checkbox" id="tp-wfh" onchange="saveProfile()"> Work from home (some days)
+          </label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+            <input type="checkbox" id="tp-pension" onchange="saveProfile()"> Have a pension
+          </label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+            <input type="checkbox" id="tp-firsthome" onchange="saveProfile()"> Saving for first home
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Potential savings summary -->
+  <div id="ti-summary" style="max-width:700px;margin-bottom:20px"></div>
+
+  <!-- All sections rendered here -->
+  <div id="ti-sections" style="max-width:700px"></div>
+</div>
+  
 <!-- Edit modal -->
 <div class="modal-overlay" id="editModal">
   <div class="modal">
@@ -782,6 +847,7 @@ function renderPage(p) {
   if (p === 'paye')         renderPayePage();
   if (p === 'import')       renderImportPage();
   if (p === 'settings')     renderSettings();
+  if (p === 'taxinfo')      renderTaxInfo();
 }
 
 function renderPayePage() {
@@ -1628,6 +1694,348 @@ function renderAll() {
   if (active) renderPage(active.dataset.page);
 }
 
+  // ════════════════════════════════════════════════════════════════
+//  TAX BENEFITS PAGE
+//  To add a new item: add an object to TAX_ITEMS below.
+//  To add a new section: add a new `section` value and a header
+//  entry in SECTION_META below.
+// ════════════════════════════════════════════════════════════════
+
+const SECTION_META = [
+  { id: 'income',   icon: '💼', label: 'Income & Side Hustle Allowances' },
+  { id: 'savings',  icon: '💰', label: 'Savings & Investment' },
+  { id: 'work',     icon: '🧾', label: 'Work & Expense Deductions' },
+  { id: 'pension',  icon: '🏦', label: 'Pension & Long-Term Reliefs' },
+  { id: 'misc',     icon: '🧑‍🎓', label: 'Life, Student & Misc' },
+];
+
+// ── Edit or add items here freely ──────────────────────────────
+const TAX_ITEMS = [
+  // INCOME
+  {
+    id: 'trading-allowance', section: 'income',
+    title: 'Trading Allowance',
+    amount: '£1,000 tax-free per year',
+    summary: 'Covers freelancing, dog sitting, selling services casually. If you earn under £1,000 you don\'t need to declare it. Over £1,000: choose to deduct the £1,000 flat allowance OR your actual expenses — whichever is higher.',
+    eligibility: ['Self-employed or have a side hustle', 'Not already claiming actual expenses for the same income'],
+    relevant: p => p.dogsitting || p.employment === 'sole_trader' || p.employment === 'both',
+    relevantNote: 'Applies to your dog sitting income.',
+    link: 'https://www.gov.uk/guidance/tax-free-allowances-on-property-and-trading-income',
+  },
+  {
+    id: 'property-allowance', section: 'income',
+    title: 'Property Allowance',
+    amount: '£1,000 tax-free per year',
+    summary: 'For income from renting out a room, Airbnb, or a parking space. Separate from the trading allowance — you can claim both.',
+    eligibility: ['You receive income from property (not your main job)'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/guidance/tax-free-allowances-on-property-and-trading-income',
+  },
+  {
+    id: 'rent-a-room', section: 'income',
+    title: 'Rent-a-Room Scheme',
+    amount: 'Up to £7,500 tax-free per year',
+    summary: 'If you rent out a furnished room in your own home. The threshold is halved to £3,750 if you share the income with a partner.',
+    eligibility: ['You own or rent your home', 'The room is furnished', 'It is in your main residence'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/rent-room-in-your-home/the-rent-a-room-scheme',
+  },
+
+  // SAVINGS
+  {
+    id: 'isa', section: 'savings',
+    title: 'ISA (Individual Savings Account)',
+    amount: 'Up to £20,000/year — all growth tax-free',
+    summary: 'No tax on interest, dividends, or capital gains inside an ISA. Types: Cash ISA, Stocks & Shares ISA, Lifetime ISA, Innovative Finance ISA. You can split the £20,000 across types.',
+    eligibility: ['UK resident', 'Aged 18+ (16+ for cash ISA)'],
+    relevant: () => true,
+    relevantNote: 'Everyone can benefit from this.',
+    link: 'https://www.gov.uk/individual-savings-accounts',
+  },
+  {
+    id: 'lisa', section: 'savings',
+    title: 'Lifetime ISA (LISA)',
+    amount: '25% government bonus on up to £4,000/year (max £1,000 bonus/year)',
+    summary: 'Use for buying your first home (up to £450,000) or retirement from age 60. Must open before age 40. Withdrawing for other reasons incurs a 25% penalty (which effectively takes back the bonus plus some of your own money).',
+    eligibility: ['Aged 18–39 to open', 'UK resident', 'First-time buyer OR saving for retirement'],
+    relevant: p => p.firsthome,
+    relevantNote: 'You flagged saving for a first home — this is worth opening ASAP.',
+    link: 'https://www.gov.uk/lifetime-isa',
+  },
+  {
+    id: 'psa', section: 'savings',
+    title: 'Personal Savings Allowance',
+    amount: '£1,000 (basic rate) / £500 (higher rate) / £0 (additional rate)',
+    summary: 'Interest earned on savings outside an ISA up to this threshold is tax-free. Includes bank accounts, building societies, credit unions.',
+    eligibility: ['UK taxpayer', 'Additional rate taxpayers get no allowance'],
+    relevant: p => p.band !== 'additional',
+    relevantNote: '',
+    link: 'https://www.gov.uk/apply-tax-free-interest-on-savings',
+  },
+  {
+    id: 'dividend', section: 'savings',
+    title: 'Dividend Allowance',
+    amount: '£500 tax-free dividends per year',
+    summary: 'If you receive dividends (e.g. from shares or your own limited company), the first £500 is tax-free. Above this, dividends are taxed at 8.75% (basic), 33.75% (higher), or 39.35% (additional).',
+    eligibility: ['You receive dividend income'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/tax-on-dividends',
+  },
+  {
+    id: 'cgt', section: 'savings',
+    title: 'Capital Gains Tax (CGT) Allowance',
+    amount: '£3,000 tax-free gains per year',
+    summary: 'Gains from selling assets (shares, property other than your home, crypto) up to £3,000/year are tax-free. Above this: 18% or 24% for property; 10% or 20% for other assets (depending on your tax band).',
+    eligibility: ['You sell assets at a profit'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/capital-gains-tax',
+  },
+
+  // WORK
+  {
+    id: 'biz-expenses', section: 'work',
+    title: 'Business Expenses',
+    amount: 'Fully deductible — reduces your taxable profit £ for £',
+    summary: 'As a sole trader you can deduct: equipment (laptop, tools), travel (not commuting), phone & internet (business portion), software subscriptions, training directly related to your work, professional insurance, accountancy fees.',
+    eligibility: ['Self-employed / sole trader', 'Expense must be wholly and exclusively for business'],
+    relevant: p => p.employment === 'sole_trader' || p.employment === 'both',
+    relevantNote: 'Directly applies to your PreQlinic and dog sitting work.',
+    link: 'https://www.gov.uk/expenses-if-youre-self-employed',
+  },
+  {
+    id: 'wfh', section: 'work',
+    title: 'Working From Home Allowance',
+    amount: '£6/week flat rate (~£312/year) OR actual cost method',
+    summary: 'Flat rate: claim £6/week without receipts. Actual cost: calculate the business proportion of your home costs (heating, electricity, broadband). Sole traders can also claim a percentage of mortgage interest or rent.',
+    eligibility: ['You work from home regularly', 'For employed: your employer does not cover costs'],
+    relevant: p => p.wfh,
+    relevantNote: 'You flagged working from home — make sure you\'re claiming this.',
+    link: 'https://www.gov.uk/hmrc-internal-manuals/business-income-manual/bim75010',
+  },
+  {
+    id: 'mileage', section: 'work',
+    title: 'Mileage Allowance',
+    amount: '45p/mile (first 10,000 miles) · 25p/mile after',
+    summary: 'Claim for business journeys in your own vehicle. Commuting to a regular place of work does not count. Dog sitting travel and client visits do. Keep a log of dates, destinations, and purpose.',
+    eligibility: ['Self-employed or employee using own vehicle for work', 'Journey must be for business purposes'],
+    relevant: p => p.dogsitting || p.employment === 'sole_trader' || p.employment === 'both',
+    relevantNote: 'Your dog sitting travel qualifies. Track it in the Mileage tab.',
+    link: 'https://www.gov.uk/expenses-and-benefits-business-travel-mileage',
+  },
+  {
+    id: 'uniform', section: 'work',
+    title: 'Uniform / Work Clothing',
+    amount: 'Flat rates vary by job — typically £60–£185/year',
+    summary: 'Claim if you wear a uniform or specialist clothing required for work that you wash yourself. Standard clothing you could wear outside work does not qualify. HMRC publishes flat rates per industry.',
+    eligibility: ['You wear a required uniform or specialist protective clothing'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/tax-relief-for-employees/uniforms-work-clothing-and-tools',
+  },
+
+  // PENSION
+  {
+    id: 'pension-relief', section: 'pension',
+    title: 'Pension Contributions',
+    amount: 'Tax relief at your marginal rate — up to £60,000/year (annual allowance)',
+    summary: 'Basic rate relief (20%) is added automatically. Higher and additional rate taxpayers can claim extra via self-assessment. As a sole trader, contributions to a SIPP reduce your taxable profit. The annual allowance is £60,000 or 100% of your earnings, whichever is lower.',
+    eligibility: ['UK resident under 75', 'Have UK earnings'],
+    relevant: p => p.pension,
+    relevantNote: 'You flagged having a pension — check you\'re claiming higher-rate relief if applicable.',
+    link: 'https://www.gov.uk/tax-on-your-private-pension/pension-tax-relief',
+  },
+  {
+    id: 'salary-sacrifice', section: 'pension',
+    title: 'Salary Sacrifice Schemes',
+    amount: 'Saves income tax + NI on the sacrificed amount',
+    summary: 'If employed, your employer can let you trade salary for benefits: pension top-ups, cycle to work, electric vehicle leasing, childcare vouchers. You pay less tax and NI because your headline salary is lower.',
+    eligibility: ['Employed (PAYE)', 'Your employer offers a scheme'],
+    relevant: p => p.employment === 'employed' || p.employment === 'both',
+    relevantNote: '',
+    link: 'https://www.gov.uk/salary-sacrifice-and-the-effects-on-paye',
+  },
+
+  // MISC
+  {
+    id: 'marriage-allowance', section: 'misc',
+    title: 'Marriage Allowance',
+    amount: 'Transfer £1,260 of your personal allowance → saves partner ~£252/year',
+    summary: 'If one partner earns under £12,570 (unused personal allowance) they can transfer £1,260 to the higher earner. The higher earner must be a basic rate taxpayer. Can be backdated up to 4 years.',
+    eligibility: ['Married or in a civil partnership', 'One partner earns under £12,570', 'Other partner is a basic rate taxpayer (not higher/additional)'],
+    relevant: p => p.married,
+    relevantNote: 'You flagged married/civil partnership — check if one of you earns under £12,570.',
+    link: 'https://www.gov.uk/marriage-allowance',
+  },
+  {
+    id: 'student-loan', section: 'misc',
+    title: 'Student Loan Repayments',
+    amount: 'Not a tax saving — but affects your take-home pay significantly',
+    summary: 'Plan 1: 9% on income over £24,990. Plan 2: 9% over £27,295. Plan 4: 9% over £31,395. Repayments are calculated on gross income. If self-employed, HMRC collects via self-assessment. Worth understanding for cash-flow planning.',
+    eligibility: ['You have an outstanding student loan'],
+    relevant: p => p.sl !== 'none',
+    relevantNote: 'You have a student loan selected in your profile — check the PAYE calculator tab for impact.',
+    link: 'https://www.gov.uk/repaying-your-student-loan',
+  },
+  {
+    id: 'gift-aid', section: 'misc',
+    title: 'Gift Aid',
+    amount: 'Extends basic rate relief to charities; higher-rate taxpayers reclaim the extra',
+    summary: 'When you donate to charity with Gift Aid, the charity claims 25p per £1 from HMRC. If you\'re a higher or additional rate taxpayer, you can reclaim the difference (20% or 25%) via self-assessment, effectively reducing your tax bill.',
+    eligibility: ['You make charitable donations', 'You pay enough UK tax to cover the Gift Aid claimed'],
+    relevant: p => p.band === 'higher' || p.band === 'additional',
+    relevantNote: '',
+    link: 'https://www.gov.uk/donating-to-charity/gift-aid',
+  },
+  {
+    id: 'blind-allowance', section: 'misc',
+    title: "Blind Person's Allowance",
+    amount: '£3,070 additional tax-free allowance (2024–25)',
+    summary: 'Added on top of the personal allowance. If you cannot use the full allowance yourself, the unused portion can be transferred to your spouse or civil partner.',
+    eligibility: ['Registered as severely sight impaired with a local authority'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/blind-persons-allowance',
+  },
+  {
+    id: 'child-benefit', section: 'misc',
+    title: 'High Income Child Benefit Charge',
+    amount: 'Charge applies if either parent earns over £60,000',
+    summary: 'Child benefit is clawed back at 1% per £200 earned over £60,000. Fully clawed back at £80,000. If applicable, you must register for self-assessment and declare it — or opt out of receiving child benefit.',
+    eligibility: ['You or your partner receive Child Benefit', 'Either of you earns over £60,000'],
+    relevant: () => false,
+    relevantNote: '',
+    link: 'https://www.gov.uk/child-benefit-tax-charge',
+  },
+];
+
+// ── Render ─────────────────────────────────────────────────────
+function renderTaxInfo() {
+  loadProfile();
+  const profile  = getTaxProfile();
+  const checked  = state.taxChecklist || {};
+  const relevant = TAX_ITEMS.filter(item => item.relevant(profile));
+
+  // Summary bar
+  document.getElementById('ti-summary').innerHTML = relevant.length
+    ? `<div style="background:var(--accent-bg);border:1px solid #b8d9c3;border-radius:var(--radius-lg);padding:14px 18px;display:flex;align-items:center;gap:14px">
+        <span style="font-size:24px">👤</span>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--accent)">
+            ${relevant.length} allowance${relevant.length > 1 ? 's' : ''} flagged as relevant to your profile
+          </div>
+          <div style="font-size:12px;color:var(--ink-2);margin-top:2px">
+            ${relevant.filter(i => checked[i.id]).length} of ${relevant.length} reviewed
+          </div>
+        </div>
+      </div>`
+    : '';
+
+  // Sections
+  document.getElementById('ti-sections').innerHTML = SECTION_META.map(sec => {
+    const items = TAX_ITEMS.filter(i => i.section === sec.id);
+    return `
+      <div style="margin-bottom:8px">
+        <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:10px;margin-top:24px">
+          ${sec.icon} ${sec.label}
+        </div>
+        ${items.map(item => renderTaxCard(item, profile, checked)).join('')}
+      </div>`;
+  }).join('');
+}
+
+function renderTaxCard(item, profile, checked) {
+  const isRelevant = item.relevant(profile);
+  const isDone     = !!checked[item.id];
+  return `
+    <div style="background:#fff;border:1px solid ${isRelevant ? '#b8d9c3' : 'var(--line)'};border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:10px;
+      ${isDone ? 'opacity:0.6' : ''}">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <!-- Checkbox -->
+        <div style="padding-top:2px;flex-shrink:0">
+          <input type="checkbox" id="tc-${item.id}" ${isDone ? 'checked' : ''}
+            onchange="toggleTaxCheck('${item.id}')"
+            style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-weight:500;font-size:14px">${item.title}</span>
+            ${isRelevant ? `<span class="badge badge-green">👤 Relevant to you</span>` : ''}
+            ${isDone ? `<span class="badge badge-gray">Reviewed ✓</span>` : ''}
+          </div>
+          <div style="font-size:13px;font-weight:500;color:var(--gold);margin-bottom:6px">${item.amount}</div>
+          <div style="font-size:13px;color:var(--ink-2);margin-bottom:8px;line-height:1.6">${item.summary}</div>
+          ${item.eligibility.length ? `
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:4px">Eligibility checklist</div>
+            <ul style="margin:0 0 8px 18px;font-size:13px;color:var(--ink-2);line-height:1.7">
+              ${item.eligibility.map(e => `<li>${e}</li>`).join('')}
+            </ul>` : ''}
+          ${isRelevant && item.relevantNote ? `
+            <div style="background:var(--accent-bg);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--accent);margin-bottom:8px">
+              💡 ${item.relevantNote}
+            </div>` : ''}
+          <a href="${item.link}" target="_blank" rel="noopener"
+            style="font-size:12px;color:var(--info);text-decoration:none;border-bottom:1px solid currentColor">
+            HMRC guidance ↗
+          </a>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleTaxCheck(id) {
+  if (!state.taxChecklist) state.taxChecklist = {};
+  state.taxChecklist[id] = !!document.getElementById('tc-' + id).checked;
+  save();
+  // Re-render just the summary counter without rebuilding the whole page
+  const profile  = getTaxProfile();
+  const checked  = state.taxChecklist;
+  const relevant = TAX_ITEMS.filter(item => item.relevant(profile));
+  if (relevant.length) {
+    const done = relevant.filter(i => checked[i.id]).length;
+    const counter = document.querySelector('#ti-summary div div:last-child');
+    if (counter) counter.textContent = `${done} of ${relevant.length} reviewed`;
+  }
+}
+
+// ── Profile helpers ────────────────────────────────────────────
+function getTaxProfile() {
+  return {
+    employment: document.getElementById('tp-employment')?.value || 'sole_trader',
+    band:       document.getElementById('tp-band')?.value       || 'basic',
+    sl:         document.getElementById('tp-sl')?.value         || 'none',
+    dogsitting: document.getElementById('tp-dogsitting')?.checked || false,
+    married:    document.getElementById('tp-married')?.checked    || false,
+    wfh:        document.getElementById('tp-wfh')?.checked        || false,
+    pension:    document.getElementById('tp-pension')?.checked    || false,
+    firsthome:  document.getElementById('tp-firsthome')?.checked  || false,
+  };
+}
+
+function saveProfile() {
+  state.taxProfile = getTaxProfile();
+  save();
+  renderTaxInfo();
+}
+
+function loadProfile() {
+  const p = state.taxProfile;
+  if (!p) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+  set('tp-employment', p.employment);
+  set('tp-band',       p.band);
+  set('tp-sl',         p.sl);
+  chk('tp-dogsitting', p.dogsitting);
+  chk('tp-married',    p.married);
+  chk('tp-wfh',        p.wfh);
+  chk('tp-pension',    p.pension);
+  chk('tp-firsthome',  p.firsthome);
+}
+  
 // ════════════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════════════
