@@ -647,110 +647,110 @@
   </main>
 </div>
 
-  <!-- ── TAX BENEFITS INFO PAGE ── -->
-<div class="page" id="page-taxinfo">
-  <div class="page-title">Tax Benefits & Allowances</div>
-  <div class="page-sub">UK 2024–25. Tick items as you review them. Set your profile to highlight what's relevant to you.</div>
-
-  <!-- Profile box -->
-  <div class="card" style="max-width:700px;margin-bottom:20px">
-    <div class="section-title">Your profile <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--ink-2)">— used to flag relevant items</span></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
-      <div class="form-row" style="margin:0">
-        <label>Employment type</label>
-        <select id="tp-employment" onchange="saveProfile()">
-          <option value="sole_trader">Sole trader</option>
-          <option value="employed">Employed (PAYE)</option>
-          <option value="both">Both</option>
-        </select>
+    <!-- ── TAX BENEFITS INFO PAGE ── -->
+      <div class="page" id="page-taxinfo">
+        <div class="page-title">Tax Benefits & Allowances</div>
+        <div class="page-sub">UK 2024–25. Tick items as you review them. Set your profile to highlight what's relevant to you.</div>
+      
+        <!-- Profile box -->
+        <div class="card" style="max-width:700px;margin-bottom:20px">
+          <div class="section-title">Your profile <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--ink-2)">— used to flag relevant items</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+            <div class="form-row" style="margin:0">
+              <label>Employment type</label>
+              <select id="tp-employment" onchange="saveProfile()">
+                <option value="sole_trader">Sole trader</option>
+                <option value="employed">Employed (PAYE)</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+            <div class="form-row" style="margin:0">
+              <label>Tax band</label>
+              <select id="tp-band" onchange="saveProfile()">
+                <option value="basic">Basic (20%)</option>
+                <option value="higher">Higher (40%)</option>
+                <option value="additional">Additional (45%)</option>
+              </select>
+            </div>
+            <div class="form-row" style="margin:0">
+              <label>Student loan</label>
+              <select id="tp-sl" onchange="saveProfile()">
+                <option value="none">None</option>
+                <option value="plan1">Plan 1</option>
+                <option value="plan2">Plan 2</option>
+                <option value="plan4">Plan 4</option>
+              </select>
+            </div>
+            <div class="form-row" style="margin:0">
+              <label>Situation</label>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-top:2px">
+                <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                  <input type="checkbox" id="tp-dogsitting" onchange="saveProfile()"> Dog sitting / side hustle
+                </label>
+                <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                  <input type="checkbox" id="tp-married" onchange="saveProfile()"> Married / civil partnership
+                </label>
+                <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                  <input type="checkbox" id="tp-wfh" onchange="saveProfile()"> Work from home (some days)
+                </label>
+                <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                  <input type="checkbox" id="tp-pension" onchange="saveProfile()"> Have a pension
+                </label>
+                <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                  <input type="checkbox" id="tp-firsthome" onchange="saveProfile()"> Saving for first home
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <!-- Potential savings summary -->
+        <div id="ti-summary" style="max-width:700px;margin-bottom:20px"></div>
+      
+        <!-- All sections rendered here -->
+        <div id="ti-sections" style="max-width:700px"></div>
       </div>
-      <div class="form-row" style="margin:0">
-        <label>Tax band</label>
-        <select id="tp-band" onchange="saveProfile()">
-          <option value="basic">Basic (20%)</option>
-          <option value="higher">Higher (40%)</option>
-          <option value="additional">Additional (45%)</option>
-        </select>
-      </div>
-      <div class="form-row" style="margin:0">
-        <label>Student loan</label>
-        <select id="tp-sl" onchange="saveProfile()">
-          <option value="none">None</option>
-          <option value="plan1">Plan 1</option>
-          <option value="plan2">Plan 2</option>
-          <option value="plan4">Plan 4</option>
-        </select>
-      </div>
-      <div class="form-row" style="margin:0">
-        <label>Situation</label>
-        <div style="display:flex;flex-direction:column;gap:5px;margin-top:2px">
-          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
-            <input type="checkbox" id="tp-dogsitting" onchange="saveProfile()"> Dog sitting / side hustle
-          </label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
-            <input type="checkbox" id="tp-married" onchange="saveProfile()"> Married / civil partnership
-          </label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
-            <input type="checkbox" id="tp-wfh" onchange="saveProfile()"> Work from home (some days)
-          </label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
-            <input type="checkbox" id="tp-pension" onchange="saveProfile()"> Have a pension
-          </label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:7px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
-            <input type="checkbox" id="tp-firsthome" onchange="saveProfile()"> Saving for first home
-          </label>
+        
+      <!-- Edit modal -->
+      <div class="modal-overlay" id="editModal">
+        <div class="modal">
+          <button class="modal-close" onclick="closeModal()">×</button>
+          <div class="modal-title">Edit transaction</div>
+          <div class="form-row">
+            <label>Date</label>
+            <input type="date" id="edit-date">
+          </div>
+          <div class="form-row">
+            <label>Description</label>
+            <input type="text" id="edit-desc">
+          </div>
+          <div class="form-row">
+            <label>Type</label>
+            <select id="edit-type">
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Category</label>
+            <select id="edit-cat"></select>
+          </div>
+          <div class="form-row">
+            <label>Amount (£)</label>
+            <input type="number" id="edit-amount" min="0" step="0.01">
+          </div>
+          <div class="form-row">
+            <label>Notes</label>
+            <textarea id="edit-notes" rows="2"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button onclick="closeModal()">Cancel</button>
+            <button class="btn-success" onclick="saveEdit()">Save changes</button>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Potential savings summary -->
-  <div id="ti-summary" style="max-width:700px;margin-bottom:20px"></div>
-
-  <!-- All sections rendered here -->
-  <div id="ti-sections" style="max-width:700px"></div>
-</div>
-  
-<!-- Edit modal -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-title">Edit transaction</div>
-    <div class="form-row">
-      <label>Date</label>
-      <input type="date" id="edit-date">
-    </div>
-    <div class="form-row">
-      <label>Description</label>
-      <input type="text" id="edit-desc">
-    </div>
-    <div class="form-row">
-      <label>Type</label>
-      <select id="edit-type">
-        <option value="income">Income</option>
-        <option value="expense">Expense</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label>Category</label>
-      <select id="edit-cat"></select>
-    </div>
-    <div class="form-row">
-      <label>Amount (£)</label>
-      <input type="number" id="edit-amount" min="0" step="0.01">
-    </div>
-    <div class="form-row">
-      <label>Notes</label>
-      <textarea id="edit-notes" rows="2"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button onclick="closeModal()">Cancel</button>
-      <button class="btn-success" onclick="saveEdit()">Save changes</button>
-    </div>
-  </div>
-</div>
-
-<script>
+      
+      <script>
 // ════════════════════════════════════════════════════════════════
 //  CONFIG — edit these defaults freely
 // ════════════════════════════════════════════════════════════════
