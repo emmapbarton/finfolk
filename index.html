@@ -273,6 +273,12 @@
   .tax-bar-wrap { background: var(--surface); border-radius: 6px; height: 10px; overflow: hidden; margin: 8px 0; }
   .tax-bar-fill { height: 100%; background: var(--gold); border-radius: 6px; transition: width 0.5s; }
 
+  /* ── Budget bars ── */
+  .budget-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .budget-bar-fill.ok    { background: var(--accent); }
+  .budget-bar-fill.warn  { background: #c47c1a; }
+  .budget-bar-fill.over  { background: var(--warn); }
+
   /* ── Misc ── */
   .text-right { text-align: right; }
   .text-muted { color: var(--ink-2); }
@@ -312,6 +318,7 @@
       <div class="page-title">Overview</div>
       <div class="page-sub" id="dash-period">Tax Year —</div>
 
+      <div id="dash-budget-alerts"></div>
       <div class="stat-grid" id="dash-stats"></div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -348,6 +355,9 @@
     <div class="page" id="page-transactions">
       <div class="page-title">Transactions</div>
       <div class="page-sub">All entries for the selected tax year</div>
+
+      <!-- Budget progress bars -->
+      <div id="budget-bars-section" style="margin-bottom:20px"></div>
 
       <div class="flex-row" style="margin-bottom:16px">
         <div class="filter-row" id="cat-filters" style="margin-bottom:0"></div>
@@ -490,12 +500,24 @@
           </div>
         </div>
 
-        <!-- ── EXPENSE-ONLY: simple amount ── -->
+<!-- ── EXPENSE-ONLY: simple amount ── -->
         <div id="add-expense-section" style="display:none">
+          <div class="form-row">
+            <label>Expense type</label>
+            <div style="display:flex;gap:8px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                <input type="radio" name="exp-kind" value="business" checked onchange="onExpKindChange()"> Business
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink)">
+                <input type="radio" name="exp-kind" value="personal" onchange="onExpKindChange()"> Personal
+              </label>
+            </div>
+          </div>
           <div class="form-row">
             <label>Amount (£)</label>
             <input type="number" id="add-expense-amount" min="0" step="0.01" placeholder="0.00">
           </div>
+          <div id="add-expense-budget-hint" style="display:none;font-size:12px;color:var(--ink-2);margin-top:-8px;margin-bottom:14px"></div>
         </div>
 
         <div class="form-row">
@@ -621,28 +643,37 @@
         </div>
       </div>
 
-      <div class="card" style="max-width:520px">
-        <div class="section-title">Expense categories</div>
-        <div id="expense-cats"></div>
-        <div class="flex-row mt8">
-          <input type="text" id="new-expense-cat" placeholder="New expense category…" style="flex:1">
-          <button onclick="addCategory('expense')" class="btn-sm">Add</button>
+    <div class="card" style="max-width:620px">
+            <div class="section-title">Expense categories
+              <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--ink-2)">Set type and optional budget limit per category</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 90px 100px 80px 60px;gap:8px;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)">
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Category</span>
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Type</span>
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Limit (£)</span>
+              <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Period</span>
+              <span></span>
+            </div>
+            <div id="expense-cats"></div>
+            <div class="flex-row mt8">
+              <input type="text" id="new-expense-cat" placeholder="New expense category…" style="flex:1">
+              <button onclick="addCategory('expense')" class="btn-sm">Add</button>
+            </div>
+          </div>
+    
+          <div class="card" style="max-width:520px">
+            <div class="section-title">Data management</div>
+            <div class="flex-row">
+              <button onclick="exportCsv()">Export all as CSV</button>
+              <button onclick="exportJson()">Backup (JSON)</button>
+              <button class="btn-danger" onclick="clearData()">Clear all data</button>
+            </div>
+            <label class="mt8" style="display:block;font-size:12px;color:var(--ink-2)">
+              Restore from backup:
+              <input type="file" id="restoreFile" accept=".json" onchange="restoreJson(event)" style="font-size:12px;margin-top:6px">
+            </label>
+          </div>
         </div>
-      </div>
-
-      <div class="card" style="max-width:520px">
-        <div class="section-title">Data management</div>
-        <div class="flex-row">
-          <button onclick="exportCsv()">Export all as CSV</button>
-          <button onclick="exportJson()">Backup (JSON)</button>
-          <button class="btn-danger" onclick="clearData()">Clear all data</button>
-        </div>
-        <label class="mt8" style="display:block;font-size:12px;color:var(--ink-2)">
-          Restore from backup:
-          <input type="file" id="restoreFile" accept=".json" onchange="restoreJson(event)" style="font-size:12px;margin-top:6px">
-        </label>
-      </div>
-    </div>
 
     <!-- ── TAX BENEFITS INFO PAGE ── -->
       <div class="page" id="page-taxinfo">
@@ -888,6 +919,8 @@ function renderDashboard() {
   document.getElementById('dash-period').textContent =
     `6 April ${ty} — 5 April ${ty + 1}`;
 
+    renderBudgetAlerts();
+
   const income   = txns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const expenses = txns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const profit   = income - expenses;
@@ -979,6 +1012,7 @@ document.getElementById('taxRateSelect').onchange = renderDashboard;
 // ════════════════════════════════════════════════════════════════
 function renderTransactions() {
   const txns = state.transactions.filter(t => inSelectedYear(t.date));
+    renderBudgetBars();
   const allCats = ['All', ...new Set(txns.map(t => t.category))];
 
   // Build filter pills
@@ -1047,11 +1081,28 @@ function renderAddPage() {
   onAddTypeChange();
 }
 
+document.getElementById('add-cat').addEventListener('change', () => {
+  const type = document.getElementById('add-type').value;
+  if (type === 'expense') {
+    const kind = getKindForCat(document.getElementById('add-cat').value);
+    document.querySelectorAll('input[name="exp-kind"]').forEach(r => r.checked = r.value === kind);
+    updateExpenseBudgetHint();
+  }
+});
+        
 function onAddTypeChange() {
   const type = document.getElementById('add-type').value;
   populateCatSelect('add-cat', type);
   document.getElementById('add-income-section').style.display  = type === 'income'  ? '' : 'none';
   document.getElementById('add-expense-section').style.display = type === 'expense' ? '' : 'none';
+  if (type === 'expense') {
+    // Auto-set personal/business radio based on category meta
+    const cat  = document.getElementById('add-cat').value;
+    const kind = getKindForCat(cat);
+    const radios = document.querySelectorAll('input[name="exp-kind"]');
+    radios.forEach(r => r.checked = r.value === kind);
+    updateExpenseBudgetHint();
+  }
 }
 
 function onIncomeModeChange() {
@@ -1132,8 +1183,8 @@ function saveEntry() {
   if (type === 'expense') {
     amount = parseFloat(document.getElementById('add-expense-amount').value);
     if (!amount) { showAddFeedback('Please enter an amount.', 'warn'); return; }
-    state.transactions.push({ id: uid(), date, amount, description: desc, category: cat, type, notes });
-
+    const expKind = document.querySelector('input[name="exp-kind"]:checked')?.value || 'business';
+    state.transactions.push({ id: uid(), date, amount, description: desc, category: cat, type, notes, kind: expKind });
   } else {
     // Income — which mode?
     const mode = document.querySelector('input[name="add-income-mode"]:checked').value;
@@ -1569,7 +1620,150 @@ function normaliseDate(raw) {
   if (us)  return `${us[3]}-${us[1].padStart(2,'0')}-${us[2].padStart(2,'0')}`;
   return '';
 }
+// ════════════════════════════════════════════════════════════════
+//  BUDGETS
+//  state.categoryMeta[catName] = { kind: 'business'|'personal', limit: number, period: 'monthly'|'annual' }
+// ════════════════════════════════════════════════════════════════
 
+function getCatMeta(cat) {
+  if (!state.categoryMeta) state.categoryMeta = {};
+  return state.categoryMeta[cat] || { kind: 'business', limit: '', period: 'monthly' };
+}
+
+function saveCatMeta(cat, field, value) {
+  if (!state.categoryMeta) state.categoryMeta = {};
+  if (!state.categoryMeta[cat]) state.categoryMeta[cat] = { kind: 'business', limit: '', period: 'monthly' };
+  state.categoryMeta[cat][field] = value;
+  save();
+}
+
+// Returns spending for a category within the current period
+function getCatSpend(cat, period) {
+  const ty  = selectedTaxYear();
+  const now = new Date();
+  return state.transactions
+    .filter(t => {
+      if (t.type !== 'expense' || t.category !== cat) return false;
+      if (period === 'monthly') {
+        const d = new Date(t.date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }
+      return inSelectedYear(t.date);
+    })
+    .reduce((s, t) => s + t.amount, 0);
+}
+
+function getBudgetStatus(spend, limit) {
+  if (!limit) return null;
+  const pct = spend / limit * 100;
+  return { pct: Math.min(pct, 100), over: pct > 100, warn: pct >= 80, spend, limit };
+}
+
+// Renders the budget bars on the transactions page
+function renderBudgetBars() {
+  const meta = state.categoryMeta || {};
+  const catsWithLimits = state.expenseCategories.filter(c => meta[c] && meta[c].limit);
+  const section = document.getElementById('budget-bars-section');
+  if (!section) return;
+
+  if (!catsWithLimits.length) {
+    section.innerHTML = '';
+    return;
+  }
+
+  // Split into business and personal
+  const business = catsWithLimits.filter(c => (meta[c].kind || 'business') === 'business');
+  const personal = catsWithLimits.filter(c => meta[c].kind === 'personal');
+
+  function renderGroup(cats, label) {
+    if (!cats.length) return '';
+    return `
+      <div style="margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:12px">${label} budgets</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+          ${cats.map(cat => {
+            const m      = meta[cat];
+            const spend  = getCatSpend(cat, m.period);
+            const status = getBudgetStatus(spend, parseFloat(m.limit));
+            if (!status) return '';
+            const cls    = status.over ? 'over' : status.warn ? 'warn' : 'ok';
+            const colour = status.over ? 'var(--warn)' : status.warn ? '#c47c1a' : 'var(--accent)';
+            return `
+              <div style="background:#fff;border:1px solid ${status.over ? '#f4c5b0' : status.warn ? '#f0d9a0' : 'var(--line)'};border-radius:var(--radius);padding:12px 14px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+                  <span style="font-size:13px;font-weight:500">${cat}</span>
+                  <span style="font-size:12px;color:${colour};font-weight:500">${fmtGBP(status.spend)} / ${fmtGBP(status.limit)}</span>
+                </div>
+                <div class="bar-track">
+                  <div class="budget-bar-fill ${cls}" style="width:${status.pct.toFixed(1)}%"></div>
+                </div>
+                <div style="font-size:11px;color:var(--ink-3);margin-top:5px">
+                  ${status.over
+                    ? `<span style="color:var(--warn)">Over by ${fmtGBP(status.spend - status.limit)}</span>`
+                    : `${fmtGBP(status.limit - status.spend)} remaining · ${m.period}`}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  section.innerHTML = renderGroup(business, 'Business') + renderGroup(personal, 'Personal');
+}
+
+// Renders dashboard budget alerts banner
+function renderBudgetAlerts() {
+  const el = document.getElementById('dash-budget-alerts');
+  if (!el) return;
+  const meta = state.categoryMeta || {};
+  const alerts = state.expenseCategories
+    .filter(c => meta[c] && meta[c].limit)
+    .map(c => {
+      const m      = meta[c];
+      const spend  = getCatSpend(c, m.period);
+      const status = getBudgetStatus(spend, parseFloat(m.limit));
+      return status && (status.warn || status.over) ? { cat: c, status, m } : null;
+    })
+    .filter(Boolean);
+
+  if (!alerts.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div style="background:var(--warn-bg);border:1px solid #f0c4ae;border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;color:var(--warn);margin-bottom:8px">⚠ Budget alerts</div>
+      ${alerts.map(({ cat, status, m }) => `
+        <div style="font-size:13px;color:var(--warn);display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f4c5b0">
+          <span>${cat} <span style="font-weight:400;color:var(--ink-2)">(${m.kind} · ${m.period})</span></span>
+          <span style="font-weight:500">${status.over ? 'Over by ' + fmtGBP(status.spend - status.limit) : Math.round(status.pct) + '% used'}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+// Auto-detects kind from category meta for imported rows
+function getKindForCat(cat) {
+  const meta = state.categoryMeta || {};
+  return (meta[cat] && meta[cat].kind) || 'business';
+}
+
+// Shows budget hint on Add Entry expense form
+function onExpKindChange() {
+  updateExpenseBudgetHint();
+}
+
+function updateExpenseBudgetHint() {
+  const cat   = document.getElementById('add-cat').value;
+  const hint  = document.getElementById('add-expense-budget-hint');
+  if (!hint) return;
+  const meta  = state.categoryMeta || {};
+  const m     = meta[cat];
+  if (!m || !m.limit) { hint.style.display = 'none'; return; }
+  const spend  = getCatSpend(cat, m.period);
+  const status = getBudgetStatus(spend, parseFloat(m.limit));
+  if (!status) { hint.style.display = 'none'; return; }
+  const colour = status.over ? 'var(--warn)' : status.warn ? '#c47c1a' : 'var(--accent)';
+  hint.style.display = '';
+  hint.innerHTML = `<span style="color:${colour}">${m.period === 'monthly' ? 'This month' : 'This year'}: ${fmtGBP(status.spend)} of ${fmtGBP(status.limit)} used (${Math.round(status.pct)}%)</span>`;
+}
 // ════════════════════════════════════════════════════════════════
 //  SETTINGS
 // ════════════════════════════════════════════════════════════════
@@ -1580,12 +1774,36 @@ function renderSettings() {
 
 function renderCatList(type) {
   const cats = type === 'income' ? state.incomeCategories : state.expenseCategories;
-  document.getElementById(`${type}-cats`).innerHTML = cats.map((c, i) =>
-    `<div class="flex-row" style="margin-bottom:6px">
-      <span style="flex:1;font-size:13px">${escHtml(c)}</span>
-      <button class="btn-sm btn-danger" onclick="removeCategory('${type}',${i})">Remove</button>
-    </div>`
-  ).join('');
+  if (type === 'income') {
+    document.getElementById('income-cats').innerHTML = cats.map((c, i) =>
+      `<div class="flex-row" style="margin-bottom:6px">
+        <span style="flex:1;font-size:13px">${escHtml(c)}</span>
+        <button class="btn-sm btn-danger" onclick="removeCategory('income',${i})">Remove</button>
+      </div>`
+    ).join('');
+    return;
+  }
+  // Expense — show type + budget fields
+  document.getElementById('expense-cats').innerHTML = cats.map((c, i) => {
+    const m = getCatMeta(c);
+    return `
+      <div style="display:grid;grid-template-columns:1fr 90px 100px 80px 60px;gap:8px;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px">${escHtml(c)}</span>
+        <select class="inline-select" onchange="saveCatMeta('${escHtml(c)}','kind',this.value)">
+          <option value="business" ${m.kind === 'business' ? 'selected' : ''}>Business</option>
+          <option value="personal" ${m.kind === 'personal' ? 'selected' : ''}>Personal</option>
+        </select>
+        <input type="number" min="0" step="1" placeholder="No limit"
+          value="${m.limit || ''}"
+          onchange="saveCatMeta('${escHtml(c)}','limit',this.value)"
+          style="font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;width:100%">
+        <select class="inline-select" onchange="saveCatMeta('${escHtml(c)}','period',this.value)">
+          <option value="monthly" ${m.period === 'monthly' ? 'selected' : ''}>Monthly</option>
+          <option value="annual"  ${m.period === 'annual'  ? 'selected' : ''}>Annual</option>
+        </select>
+        <button class="btn-sm btn-danger" onclick="removeCategory('expense',${i})">Del</button>
+      </div>`;
+  }).join('');
 }
 
 function addCategory(type) {
