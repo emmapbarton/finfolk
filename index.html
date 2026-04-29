@@ -2199,7 +2199,9 @@ const personalCats = state.expenseCategories.filter(c => {
       .sort((a, b) => b[1].amount - a[1].amount);
 
     // Sum of category limits for this bucket
-    const bucketLimitTotal = catRows.reduce((sum, [cat]) => sum + (catLimits[cat] || 0), 0);
+    const bucketLimitTotal = Object.entries(catLimits)
+      .filter(([cat]) => (state.budgetSettings?.buckets?.[cat] || 'needs') === b.key)
+      .reduce((sum, [, lim]) => sum + lim, 0);
 
     return `
       <div style="background:#fff;border:1px solid ${over ? '#f4c5b0' : warn ? '#f0d9a0' : 'var(--line)'};
