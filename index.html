@@ -2183,9 +2183,11 @@ const personalCats = state.expenseCategories.filter(c => {
   ];
 
   document.getElementById('budget-results').innerHTML = total !== 100 ? '' : bucketDefs.map(b => {
-    const allocated = alloc[b.key];
-    const spent     = spend[b.key] || 0;
-    const remaining = allocated - spent;
+    const bucketCats = Object.entries(spendByCat).filter(([,v]) => v.bucket === b.key).map(([c]) => c);
+    const limitTotal = bucketCats.reduce((sum, c) => sum + (catLimits[c] || 0), 0);
+    const allocated  = limitTotal > 0 ? limitTotal : alloc[b.key];
+    const spent      = spend[b.key] || 0;
+    const remaining  = allocated - spent;
     const pct       = allocated > 0 ? Math.min(100, spent / allocated * 100) : 0;
     const over      = remaining < 0;
     const warn      = pct >= 80 && !over;
