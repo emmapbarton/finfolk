@@ -2209,7 +2209,8 @@ const personalCats = state.expenseCategories.filter(c => {
           <span style="font-size:12px;color:var(--ink-2)">${b.pct}% of income</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
-          <span style="color:var(--ink-2)">Budget allocation: <strong style="color:var(--ink)">${fmtGBP(allocated)}</strong></span>
+          <span style="color:var(--ink-2)">50/30/20 allows: <strong style="color:var(--ink)">${fmtGBP(alloc[b.key])}</strong></span>
+          <span style="color:var(--ink-2)">You budgeted: <strong style="color:${bucketLimitTotal > alloc[b.key] ? 'var(--warn)' : b.colour}">${bucketLimitTotal > 0 ? fmtGBP(bucketLimitTotal) : '—'}</strong></span>
           <span style="color:var(--ink-2)">Spent: <strong style="color:${barColour}">${fmtGBP(spent)}</strong></span>
           <span style="color:var(--ink-2)">Remaining: <strong style="color:${over?'var(--warn)':b.colour}">${over?'−':''}${fmtGBP(Math.abs(remaining))}</strong></span>
         </div>
