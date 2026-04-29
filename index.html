@@ -308,6 +308,7 @@
     <button class="nav-btn" data-page="import"><span class="icon">↑</span> Import CSV</button>
     <button class="nav-btn" data-page="taxinfo"><span class="icon">✦</span> Tax Benefits</button>
     <button class="nav-btn" data-page="budgeting"><span class="icon">◎</span> Budgeting</button>
+    <button class="nav-btn" data-page="wealth"><span class="icon">◈</span> Wealth</button>
     <button class="nav-btn" data-page="settings"><span class="icon">⚙</span> Settings</button>
   </nav>
 
@@ -676,6 +677,43 @@
           </div>
     </div>
 
+    <!-- ── WEALTH / MONEY DISTRIBUTION PAGE ── -->
+    <div class="page" id="page-wealth">
+      <div class="page-title">Wealth</div>
+      <div class="page-sub">Where your money lives — balances, goals, and liquidity</div>
+
+      <!-- Top row: totals + liquid/locked -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px" id="wealth-stats"></div>
+
+      <!-- Chart + account list -->
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:16px">
+
+        <!-- Donut chart -->
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div class="section-title" style="width:100%">Distribution</div>
+          <svg id="wealth-donut" width="220" height="220" viewBox="0 0 220 220"></svg>
+          <div id="wealth-legend" style="width:100%;margin-top:12px"></div>
+        </div>
+
+        <!-- Account list -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="section-title" style="margin:0">Accounts</div>
+            <button class="btn-success btn-sm" onclick="openWealthModal()">+ Add account</button>
+          </div>
+          <div id="wealth-list"></div>
+        </div>
+
+      </div>
+
+      <!-- Liquid vs locked -->
+      <div class="card" style="max-width:680px">
+        <div class="section-title">Liquid vs locked</div>
+        <div id="wealth-liquidity"></div>
+      </div>
+
+    </div>
+    
     <!-- ── BUDGETING PAGE ── -->
     <div class="page" id="page-budgeting">
       <div class="page-title">Budgeting</div>
@@ -876,6 +914,62 @@
 </main>
 </div>
 
+  <!-- Add/edit wealth account modal -->
+<div class="modal-overlay" id="wealthModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeWealthModal()">×</button>
+    <div class="modal-title" id="wealth-modal-title">Add account</div>
+    <div class="form-row">
+      <label>Account name</label>
+      <input type="text" id="w-name" placeholder="e.g. Cash ISA, Trading 212">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Type</label>
+        <select id="w-type">
+          <option value="isa">ISA</option>
+          <option value="investment">Investment</option>
+          <option value="savings">Savings</option>
+          <option value="current">Current account</option>
+          <option value="cash">Cash</option>
+          <option value="pension">Pension</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Liquidity</label>
+        <select id="w-liquid">
+          <option value="liquid">Liquid — instant access</option>
+          <option value="notice">Notice period</option>
+          <option value="locked">Locked — can't touch easily</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Current balance (£)</label>
+        <input type="number" id="w-balance" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-row">
+        <label>Target balance (£) — optional</label>
+        <input type="number" id="w-target" min="0" step="0.01" placeholder="e.g. 3000">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Purpose / note</label>
+      <input type="text" id="w-purpose" placeholder="e.g. Emergency fund, house deposit">
+    </div>
+    <div class="form-row">
+      <label>Last updated</label>
+      <input type="date" id="w-updated">
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeWealthModal()">Cancel</button>
+      <button class="btn-success" onclick="saveWealthAccount()">Save</button>
+    </div>
+  </div>
+</div>
+  
   <!-- Add/edit large purchase modal -->
 <div class="modal-overlay" id="purchaseModal">
   <div class="modal">
@@ -1056,6 +1150,7 @@ function renderPage(p) {
   if (p === 'paye')         renderPayePage();
   if (p === 'import')       renderImportPage();
   if (p === 'settings')     renderSettings();
+  if (p === 'wealth')       renderWealth();
   if (p === 'budgeting')    renderBudgeting();
   if (p === 'taxinfo')      renderTaxInfo();
 }
@@ -2476,6 +2571,243 @@ function renderBudgetBusiness() {
     : `<div style="font-size:13px;color:var(--ink-2)">No business budget limits set yet. Go to Settings → Expense categories to add them.</div>`;
 }
 
+  // ════════════════════════════════════════════════════════════════
+//  WEALTH / MONEY DISTRIBUTION
+//  state.wealthAccounts = [{ id, name, type, liquid, balance, target, purpose, updated }]
+//  To add a new account type: add an option to the modal select and
+//  a colour entry in WEALTH_COLOURS below.
+// ════════════════════════════════════════════════════════════════
+
+// ── Edit these to customise colours per account type ──────────
+const WEALTH_COLOURS = {
+  isa:        '#2d5a3d',
+  investment: '#1a3d6b',
+  savings:    '#7a5c1e',
+  current:    '#5a3d6b',
+  cash:       '#3d6b5a',
+  pension:    '#6b3d1a',
+  other:      '#a8a7a3',
+};
+
+const WEALTH_TYPE_LABELS = {
+  isa: 'ISA', investment: 'Investment', savings: 'Savings',
+  current: 'Current', cash: 'Cash', pension: 'Pension', other: 'Other',
+};
+
+const LIQUID_LABELS = {
+  liquid: '⚡ Instant access',
+  notice: '⏱ Notice period',
+  locked: '🔒 Locked',
+};
+
+let editWealthId = null;
+
+function openWealthModal(id) {
+  editWealthId = id || null;
+  const acc = id ? (state.wealthAccounts || []).find(a => a.id === id) : null;
+  document.getElementById('wealth-modal-title').textContent = id ? 'Edit account' : 'Add account';
+  document.getElementById('w-name').value    = acc ? acc.name    : '';
+  document.getElementById('w-type').value    = acc ? acc.type    : 'savings';
+  document.getElementById('w-liquid').value  = acc ? acc.liquid  : 'liquid';
+  document.getElementById('w-balance').value = acc ? acc.balance : '';
+  document.getElementById('w-target').value  = acc ? (acc.target || '') : '';
+  document.getElementById('w-purpose').value = acc ? (acc.purpose || '') : '';
+  document.getElementById('w-updated').value = acc ? acc.updated : new Date().toISOString().split('T')[0];
+  document.getElementById('wealthModal').classList.add('open');
+}
+
+function closeWealthModal() {
+  document.getElementById('wealthModal').classList.remove('open');
+  editWealthId = null;
+}
+
+function saveWealthAccount() {
+  const name    = document.getElementById('w-name').value.trim();
+  const balance = parseFloat(document.getElementById('w-balance').value);
+  if (!name || isNaN(balance)) return;
+
+  const entry = {
+    id:      editWealthId || uid(),
+    name,
+    type:    document.getElementById('w-type').value,
+    liquid:  document.getElementById('w-liquid').value,
+    balance,
+    target:  parseFloat(document.getElementById('w-target').value) || null,
+    purpose: document.getElementById('w-purpose').value.trim(),
+    updated: document.getElementById('w-updated').value,
+  };
+
+  if (!state.wealthAccounts) state.wealthAccounts = [];
+  if (editWealthId) {
+    state.wealthAccounts = state.wealthAccounts.map(a => a.id === editWealthId ? entry : a);
+  } else {
+    state.wealthAccounts.push(entry);
+  }
+  save();
+  closeWealthModal();
+  renderWealth();
+}
+
+function deleteWealthAccount(id) {
+  if (!confirm('Remove this account?')) return;
+  state.wealthAccounts = (state.wealthAccounts || []).filter(a => a.id !== id);
+  save();
+  renderWealth();
+}
+
+function renderWealth() {
+  const accounts = state.wealthAccounts || [];
+  const total    = accounts.reduce((s, a) => s + a.balance, 0);
+  const liquid   = accounts.filter(a => a.liquid === 'liquid').reduce((s, a) => s + a.balance, 0);
+  const notice   = accounts.filter(a => a.liquid === 'notice').reduce((s, a) => s + a.balance, 0);
+  const locked   = accounts.filter(a => a.liquid === 'locked').reduce((s, a) => s + a.balance, 0);
+
+  // Stats
+  document.getElementById('wealth-stats').innerHTML = [
+    { label: 'Total wealth',    value: fmtGBP(total),  cls: 'blue'  },
+    { label: '⚡ Liquid',       value: fmtGBP(liquid), cls: 'green' },
+    { label: '⏱ Notice',       value: fmtGBP(notice), cls: 'gold'  },
+    { label: '🔒 Locked',      value: fmtGBP(locked), cls: 'red'   },
+    { label: 'Accounts',        value: accounts.length, cls: ''     },
+  ].map(({ label, value, cls }) =>
+    `<div class="stat"><div class="stat-label">${label}</div><div class="stat-value ${cls}">${value}</div></div>`
+  ).join('');
+
+  // Donut chart
+  renderWealthDonut(accounts, total);
+
+  // Account list
+  const listEl = document.getElementById('wealth-list');
+  if (!accounts.length) {
+    listEl.innerHTML = `<div style="font-size:13px;color:var(--ink-2)">No accounts yet. Click + Add account to get started.</div>`;
+  } else {
+    // Group by type
+    const types = [...new Set(accounts.map(a => a.type))];
+    listEl.innerHTML = types.map(type => {
+      const group = accounts.filter(a => a.type === type);
+      return `
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+            color:${WEALTH_COLOURS[type]||'var(--ink-2)'};margin-bottom:8px">
+            ${WEALTH_TYPE_LABELS[type] || type}
+          </div>
+          ${group.map(a => {
+            const pct     = a.target ? Math.min(100, a.balance / a.target * 100) : null;
+            const overTarget = a.target && a.balance >= a.target;
+            return `
+              <div style="padding:10px 0;border-bottom:1px solid var(--line)">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+                  <div>
+                    <span style="font-weight:500;font-size:13px">${escHtml(a.name)}</span>
+                    <span style="margin-left:8px;font-size:11px;color:var(--ink-3)">${LIQUID_LABELS[a.liquid]||''}</span>
+                    ${overTarget ? `<span class="badge badge-green" style="margin-left:6px">Goal reached ✓</span>` : ''}
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-weight:500;font-size:14px">${fmtGBP(a.balance)}</span>
+                    <button class="btn-sm" onclick="openWealthModal('${a.id}')">Edit</button>
+                    <button class="btn-sm btn-danger" onclick="deleteWealthAccount('${a.id}')">Del</button>
+                  </div>
+                </div>
+                ${a.purpose ? `<div style="font-size:12px;color:var(--ink-2);margin-bottom:6px">${escHtml(a.purpose)}</div>` : ''}
+                ${a.target ? `
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-bottom:4px">
+                    <span>Target: ${fmtGBP(a.target)}</span>
+                    <span>${pct.toFixed(0)}%</span>
+                  </div>
+                  <div class="bar-track">
+                    <div class="budget-bar-fill ${overTarget ? 'ok' : pct >= 80 ? 'ok' : 'warn'}"
+                      style="width:${pct.toFixed(1)}%;background:${WEALTH_COLOURS[a.type]||'var(--accent)'}"></div>
+                  </div>` : ''}
+                <div style="font-size:11px;color:var(--ink-3);margin-top:5px">Updated: ${fmtDate(a.updated)}</div>
+              </div>`;
+          }).join('')}
+        </div>`;
+    }).join('');
+  }
+
+  // Liquidity breakdown
+  const liqEl = document.getElementById('wealth-liquidity');
+  if (!accounts.length) {
+    liqEl.innerHTML = `<div style="font-size:13px;color:var(--ink-2)">No accounts added yet.</div>`;
+  } else {
+    const groups = [
+      { key: 'liquid', label: '⚡ Instant access', colour: 'var(--accent)' },
+      { key: 'notice', label: '⏱ Notice period',  colour: 'var(--gold)'   },
+      { key: 'locked', label: '🔒 Locked',         colour: 'var(--warn)'   },
+    ];
+    liqEl.innerHTML = groups.map(g => {
+      const accs  = accounts.filter(a => a.liquid === g.key);
+      const amt   = accs.reduce((s, a) => s + a.balance, 0);
+      const pct   = total > 0 ? amt / total * 100 : 0;
+      return `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+            <span style="font-weight:500">${g.label}</span>
+            <span style="font-weight:500;color:${g.colour}">${fmtGBP(amt)}
+              <span style="font-weight:400;color:var(--ink-3)">(${pct.toFixed(0)}%)</span>
+            </span>
+          </div>
+          <div class="bar-track">
+            <div class="budget-bar-fill ok" style="width:${pct.toFixed(1)}%;background:${g.colour}"></div>
+          </div>
+          ${accs.length ? `<div style="font-size:12px;color:var(--ink-3);margin-top:4px">${accs.map(a=>escHtml(a.name)).join(' · ')}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+}
+
+function renderWealthDonut(accounts, total) {
+  const svg    = document.getElementById('wealth-donut');
+  const legend = document.getElementById('wealth-legend');
+  if (!accounts.length) {
+    svg.innerHTML    = `<text x="110" y="115" text-anchor="middle" font-size="13" fill="#a8a7a3">No data</text>`;
+    legend.innerHTML = '';
+    return;
+  }
+
+  // Group by type for the donut
+  const typeMap = {};
+  accounts.forEach(a => {
+    typeMap[a.type] = (typeMap[a.type] || 0) + a.balance;
+  });
+
+  const cx = 110, cy = 110, r = 80, inner = 50;
+  let startAngle = -Math.PI / 2;
+  const slices   = [];
+
+  Object.entries(typeMap).forEach(([type, val]) => {
+    const angle = (val / total) * Math.PI * 2;
+    slices.push({ type, val, startAngle, endAngle: startAngle + angle });
+    startAngle += angle;
+  });
+
+  function polar(cx, cy, r, angle) {
+    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+  }
+
+  svg.innerHTML = slices.map(s => {
+    const [x1, y1] = polar(cx, cy, r, s.startAngle);
+    const [x2, y2] = polar(cx, cy, r, s.endAngle);
+    const [ix1, iy1] = polar(cx, cy, inner, s.endAngle);
+    const [ix2, iy2] = polar(cx, cy, inner, s.startAngle);
+    const large = (s.endAngle - s.startAngle) > Math.PI ? 1 : 0;
+    const colour = WEALTH_COLOURS[s.type] || '#a8a7a3';
+    const path = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${inner} ${inner} 0 ${large} 0 ${ix2} ${iy2} Z`;
+    return `<path d="${path}" fill="${colour}" stroke="#faf9f7" stroke-width="2">
+      <title>${WEALTH_TYPE_LABELS[s.type]}: ${fmtGBP(s.val)}</title>
+    </path>`;
+  }).join('') + `
+    <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="11" fill="#6b6a66">Total</text>
+    <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="14" font-weight="500" fill="#1a1916">${fmtGBP(total)}</text>`;
+
+  legend.innerHTML = slices.map(s =>
+    `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:12px">
+      <div style="width:10px;height:10px;border-radius:2px;background:${WEALTH_COLOURS[s.type]||'#a8a7a3'};flex-shrink:0"></div>
+      <span style="flex:1;color:var(--ink-2)">${WEALTH_TYPE_LABELS[s.type]||s.type}</span>
+      <span style="font-weight:500">${fmtGBP(s.val)}</span>
+    </div>`
+  ).join('');
+}
   // ════════════════════════════════════════════════════════════════
 //  LARGE PURCHASES / SINKING FUND
 //  state.largePurchases = [{ id, desc, date, amount, months, bucket, notes }]
