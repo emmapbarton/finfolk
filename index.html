@@ -2116,12 +2116,23 @@ function renderBudgetPersonal() {
   const planIncome = budgetPeriod === 'annual' ? (steady * 12 || actualIncome) : (steady || actualIncome);
 
   // Bucket allocations
-  const alloc = {
+const alloc = {
     needs:   planIncome * (needs   / 100),
     wants:   planIncome * (wants   / 100),
     savings: planIncome * (savings / 100),
   };
 
+  // Per-category limits from Settings (converted to period)
+  const catLimits = {};
+  state.expenseCategories.forEach(c => {
+    const m = (state.categoryMeta || {})[c];
+    if (m && m.kind === 'personal' && m.limit) {
+      const raw = parseFloat(m.limit);
+      catLimits[c] = m.period === 'annual'
+        ? (budgetPeriod === 'monthly' ? raw / 12 : raw)
+        : (budgetPeriod === 'annual'  ? raw * 12 : raw);
+    }
+  });
   // Personal expense categories only
 const personalCats = state.expenseCategories.filter(c => {
     const m = (state.categoryMeta || {})[c];
@@ -2185,6 +2196,9 @@ const personalCats = state.expenseCategories.filter(c => {
       .filter(([, v]) => v.bucket === b.key)
       .sort((a, b) => b[1].amount - a[1].amount);
 
+    // Sum of category limits for this bucket
+    const bucketLimitTotal = catRows.reduce((sum, [cat]) => sum + (catLimits[cat] || 0), 0);
+
     return `
       <div style="background:#fff;border:1px solid ${over ? '#f4c5b0' : warn ? '#f0d9a0' : 'var(--line)'};
         border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px">
@@ -2193,7 +2207,7 @@ const personalCats = state.expenseCategories.filter(c => {
           <span style="font-size:12px;color:var(--ink-2)">${b.pct}% of income</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
-          <span style="color:var(--ink-2)">Allocated: <strong style="color:var(--ink)">${fmtGBP(allocated)}</strong></span>
+          <span style="color:var(--ink-2)">Budget allocation: <strong style="color:var(--ink)">${fmtGBP(allocated)}</strong></span>
           <span style="color:var(--ink-2)">Spent: <strong style="color:${barColour}">${fmtGBP(spent)}</strong></span>
           <span style="color:var(--ink-2)">Remaining: <strong style="color:${over?'var(--warn)':b.colour}">${over?'−':''}${fmtGBP(Math.abs(remaining))}</strong></span>
         </div>
@@ -2203,11 +2217,21 @@ const personalCats = state.expenseCategories.filter(c => {
         ${over ? `<div style="font-size:12px;color:var(--warn);margin-bottom:8px">⚠ Over budget by ${fmtGBP(Math.abs(remaining))}</div>` : ''}
         ${catRows.length ? `
           <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:6px">Breakdown</div>
-          ${catRows.map(([cat, v]) => `
-            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">
-              <span style="color:var(--ink-2)">${escHtml(cat)}</span>
-              <span style="font-weight:500">${fmtGBP(v.amount)}</span>
-            </div>`).join('')}
+          ${bucketLimitTotal > 0 ? `<div style="font-size:11px;color:var(--ink-3);margin-bottom:4px">Category limits total: ${fmtGBP(bucketLimitTotal)} ${budgetPeriod}</div>` : ''}
+          ${catRows.map(([cat, v]) => {
+            const lim = catLimits[cat];
+            const catOver = lim && v.amount > lim;
+            return `
+            <div style="margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+                <span style="color:var(--ink-2)">${escHtml(cat)}</span>
+                <span style="font-weight:500;color:${catOver ? 'var(--warn)' : 'var(--ink)'}">
+                  ${fmtGBP(v.amount)}${lim ? ` <span style="font-weight:400;color:var(--ink-3)">/ ${fmtGBP(lim)}</span>` : ''}
+                </span>
+              </div>
+              ${lim ? `<div class="bar-track" style="height:4px"><div class="budget-bar-fill ${catOver ? 'over' : v.amount/lim >= 0.8 ? 'warn' : 'ok'}" style="width:${Math.min(100,(v.amount/lim*100)).toFixed(1)}%"></div></div>` : ''}
+            </div>`;
+          }).join('')}
         ` : ''}
       </div>`;
   }).join('');
