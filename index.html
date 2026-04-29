@@ -2123,9 +2123,9 @@ function renderBudgetPersonal() {
   };
 
   // Personal expense categories only
-  const personalCats = state.expenseCategories.filter(c => {
+const personalCats = state.expenseCategories.filter(c => {
     const m = (state.categoryMeta || {})[c];
-    return !m || m.kind === 'personal';
+    return m && m.kind === 'personal';
   });
 
   // Bucket assignment UI
