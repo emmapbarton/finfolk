@@ -675,6 +675,7 @@
             </label>
           </div>
         </div>
+    </div>
 
     <!-- ── BUDGETING PAGE ── -->
     <div class="page" id="page-budgeting">
@@ -845,8 +846,11 @@
         <div id="ti-sections" style="max-width:700px"></div>
       </div>
         
-      <!-- Edit modal -->
-      <div class="modal-overlay" id="editModal">
+</main>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModal">
         <div class="modal">
           <button class="modal-close" onclick="closeModal()">×</button>
           <div class="modal-title">Edit transaction</div>
@@ -883,10 +887,8 @@
           </div>
         </div>
       </div>
-   </main>
-</div>
-      
-      <script>
+
+<script>
 // ════════════════════════════════════════════════════════════════
 //  CONFIG — edit these defaults freely
 // ════════════════════════════════════════════════════════════════
@@ -2272,274 +2274,6 @@ function renderBudgetMonthly(bucketDefs, alloc, buckets) {
       </tbody>
     </table>`;
 }
-
-// ── Business tab renderer ──────────────────────────────────────
-function renderBudgetBusiness() {
-  const ty  = selectedTaxYear();
-  const now = new Date();
-
-  // All transactions for tax year
-  const tyTxns = state.transactions.filter(t => inSelectedYear(t.date));
-  const bizIncome  = tyTxns.filter(t => t.type === 'income').reduce((s,t)=>s+t.amount,0);
-  const bizExpense = tyTxns.filter(t => t.type === 'expense' && (()=>{
-    const m = (state.categoryMeta||{})[t.category]; return !m || m.kind==='business';
-
-// ════════════════════════════════════════════════════════════════
-//  BUDGETING PAGE
-//  state.budgetSettings = { steady, period, needs, wants, savings, buckets:{cat->bucket} }
-// ════════════════════════════════════════════════════════════════
-
-let budgetPeriod = 'monthly'; // 'monthly' | 'annual'
-let budgetTab    = 'personal';
-
-function renderBudgeting() {
-  loadBudgetSettings();
-  switchBudgetTab(budgetTab, false);
-}
-
-function switchBudgetTab(tab, rerender = true) {
-  budgetTab = tab;
-  document.getElementById('budget-tab-personal').style.display = tab === 'personal' ? '' : 'none';
-  document.getElementById('budget-tab-business').style.display = tab === 'business' ? '' : 'none';
-  document.getElementById('tab-btn-personal').style.background = tab === 'personal' ? 'var(--ink)' : '#fff';
-  document.getElementById('tab-btn-personal').style.color      = tab === 'personal' ? '#fff' : 'var(--ink-2)';
-  document.getElementById('tab-btn-business').style.background = tab === 'business' ? 'var(--ink)' : '#fff';
-  document.getElementById('tab-btn-business').style.color      = tab === 'business' ? '#fff' : 'var(--ink-2)';
-  if (rerender) {
-    if (tab === 'personal') renderBudgetPersonal();
-    else renderBudgetBusiness();
-  }
-}
-
-function setBudgetPeriod(p) {
-  budgetPeriod = p;
-  document.getElementById('period-btn-monthly').style.background = p === 'monthly' ? 'var(--ink)' : '#fff';
-  document.getElementById('period-btn-monthly').style.color      = p === 'monthly' ? '#fff' : 'var(--ink-2)';
-  document.getElementById('period-btn-annual').style.background  = p === 'annual'  ? 'var(--ink)' : '#fff';
-  document.getElementById('period-btn-annual').style.color       = p === 'annual'  ? '#fff' : 'var(--ink-2)';
-  document.getElementById('period-label-1').textContent = p === 'monthly' ? '/ month' : '/ year';
-  saveBudgetSettings();
-  renderBudgetPersonal();
-}
-
-function loadBudgetSettings() {
-  const s = state.budgetSettings || {};
-  const v = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  v('budget-steady',  s.steady  || '');
-  v('split-needs',    s.needs   ?? 50);
-  v('split-wants',    s.wants   ?? 30);
-  v('split-savings',  s.savings ?? 20);
-  if (s.period) { budgetPeriod = s.period; setBudgetPeriod(s.period); }
-}
-
-function saveBudgetSettings() {
-  if (!state.budgetSettings) state.budgetSettings = {};
-  state.budgetSettings.steady  = parseFloat(document.getElementById('budget-steady').value)  || 0;
-  state.budgetSettings.needs   = parseFloat(document.getElementById('split-needs').value)    ?? 50;
-  state.budgetSettings.wants   = parseFloat(document.getElementById('split-wants').value)    ?? 30;
-  state.budgetSettings.savings = parseFloat(document.getElementById('split-savings').value)  ?? 20;
-  state.budgetSettings.period  = budgetPeriod;
-  save();
-}
-
-function saveBucketAssignment(cat, bucket) {
-  if (!state.budgetSettings) state.budgetSettings = {};
-  if (!state.budgetSettings.buckets) state.budgetSettings.buckets = {};
-  state.budgetSettings.buckets[cat] = bucket;
-  save();
-  renderBudgetPersonal();
-}
-
-// ── Personal tab renderer ──────────────────────────────────────
-function renderBudgetPersonal() {
-  const s       = state.budgetSettings || {};
-  const buckets = s.buckets || {};
-  const steady  = s.steady || 0;
-  const needs   = s.needs   ?? 50;
-  const wants   = s.wants   ?? 30;
-  const savings = s.savings ?? 20;
-  const total   = needs + wants + savings;
-
-  // Validate split
-  document.getElementById('split-warning').style.display = total !== 100 ? '' : 'none';
-
-  // Actual income from personal income transactions this period
-  const now = new Date();
-  const personalIncomeTxns = state.transactions.filter(t => {
-    if (t.type !== 'income') return false;
-    const d = new Date(t.date);
-    if (budgetPeriod === 'monthly')
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    return inSelectedYear(t.date);
-  });
-  const actualIncome = personalIncomeTxns.reduce((s, t) => s + t.amount, 0);
-  const periodLabel  = budgetPeriod === 'monthly' ? 'this month' : 'this tax year';
-  document.getElementById('budget-actual-income').textContent =
-    `${fmtGBP(actualIncome)} ${periodLabel}`;
-
-  // Use steady income for planning; show actual alongside
-  const planIncome = budgetPeriod === 'annual' ? (steady * 12 || actualIncome) : (steady || actualIncome);
-
-  // Bucket allocations
-  const alloc = {
-    needs:   planIncome * (needs   / 100),
-    wants:   planIncome * (wants   / 100),
-    savings: planIncome * (savings / 100),
-  };
-
-  // Personal expense categories only
-  const personalCats = state.expenseCategories.filter(c => {
-    const m = (state.categoryMeta || {})[c];
-    return !m || m.kind === 'personal';
-  });
-
-  // Bucket assignment UI
-  document.getElementById('bucket-assignments').innerHTML = personalCats.length
-    ? personalCats.map(cat => {
-        const assigned = buckets[cat] || 'needs';
-        return `
-          <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)">
-            <span style="flex:1;font-size:13px">${escHtml(cat)}</span>
-            <select class="inline-select" onchange="saveBucketAssignment('${escHtml(cat)}',this.value)">
-              <option value="needs"   ${assigned==='needs'   ?'selected':''}>🏠 Necessities</option>
-              <option value="wants"   ${assigned==='wants'   ?'selected':''}>🎉 Wants</option>
-              <option value="savings" ${assigned==='savings' ?'selected':''}>💰 Savings</option>
-              <option value="unassigned" ${assigned==='unassigned'?'selected':''}>— Unassigned</option>
-            </select>
-          </div>`;
-      }).join('')
-    : `<div style="font-size:13px;color:var(--ink-2)">No personal expense categories yet. Add them in Settings and mark them as Personal.</div>`;
-
-  // Spending per bucket this period
-  const spend = { needs: 0, wants: 0, savings: 0 };
-  const spendByCat = {};
-  state.transactions.filter(t => {
-    if (t.type !== 'expense') return false;
-    const m = (state.categoryMeta || {})[t.category];
-    if (m && m.kind !== 'personal') return false;
-    const d = new Date(t.date);
-    if (budgetPeriod === 'monthly')
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    return inSelectedYear(t.date);
-  }).forEach(t => {
-    const bucket = buckets[t.category] || 'needs';
-    if (bucket === 'unassigned') return;
-    spend[bucket] = (spend[bucket] || 0) + t.amount;
-    if (!spendByCat[t.category]) spendByCat[t.category] = { bucket, amount: 0 };
-    spendByCat[t.category].amount += t.amount;
-  });
-
-  // Results cards
-  const bucketDefs = [
-    { key: 'needs',   label: '🏠 Necessities', pct: needs,   colour: 'var(--accent)', bgColour: 'var(--accent-bg)' },
-    { key: 'wants',   label: '🎉 Wants',        pct: wants,   colour: 'var(--info)',   bgColour: 'var(--info-bg)'   },
-    { key: 'savings', label: '💰 Savings',       pct: savings, colour: 'var(--gold)',   bgColour: 'var(--gold-bg)'   },
-  ];
-
-  document.getElementById('budget-results').innerHTML = total !== 100 ? '' : bucketDefs.map(b => {
-    const allocated = alloc[b.key];
-    const spent     = spend[b.key] || 0;
-    const remaining = allocated - spent;
-    const pct       = allocated > 0 ? Math.min(100, spent / allocated * 100) : 0;
-    const over      = remaining < 0;
-    const warn      = pct >= 80 && !over;
-    const barColour = over ? 'var(--warn)' : warn ? '#c47c1a' : b.colour;
-
-    // Expense breakdown for this bucket
-    const catRows = Object.entries(spendByCat)
-      .filter(([, v]) => v.bucket === b.key)
-      .sort((a, b) => b[1].amount - a[1].amount);
-
-    return `
-      <div style="background:#fff;border:1px solid ${over ? '#f4c5b0' : warn ? '#f0d9a0' : 'var(--line)'};
-        border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-          <span style="font-size:15px;font-weight:500">${b.label}</span>
-          <span style="font-size:12px;color:var(--ink-2)">${b.pct}% of income</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
-          <span style="color:var(--ink-2)">Allocated: <strong style="color:var(--ink)">${fmtGBP(allocated)}</strong></span>
-          <span style="color:var(--ink-2)">Spent: <strong style="color:${barColour}">${fmtGBP(spent)}</strong></span>
-          <span style="color:var(--ink-2)">Remaining: <strong style="color:${over?'var(--warn)':b.colour}">${over?'−':''}${fmtGBP(Math.abs(remaining))}</strong></span>
-        </div>
-        <div class="bar-track" style="margin-bottom:${catRows.length?'12px':'4px'}">
-          <div class="budget-bar-fill ${over?'over':warn?'warn':'ok'}" style="width:${pct.toFixed(1)}%;background:${barColour}"></div>
-        </div>
-        ${over ? `<div style="font-size:12px;color:var(--warn);margin-bottom:8px">⚠ Over budget by ${fmtGBP(Math.abs(remaining))}</div>` : ''}
-        ${catRows.length ? `
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:6px">Breakdown</div>
-          ${catRows.map(([cat, v]) => `
-            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">
-              <span style="color:var(--ink-2)">${escHtml(cat)}</span>
-              <span style="font-weight:500">${fmtGBP(v.amount)}</span>
-            </div>`).join('')}
-        ` : ''}
-      </div>`;
-  }).join('');
-
-  // Month-by-month table
-  renderBudgetMonthly(bucketDefs, alloc, buckets);
-}
-
-function renderBudgetMonthly(bucketDefs, alloc, buckets) {
-  const ty = selectedTaxYear();
-  // Build 12 months of the tax year
-  const months = [];
-  for (let m = 0; m < 12; m++) {
-    const d = new Date(ty, 3 + m, 1);
-    months.push({ key: d.toISOString().slice(0,7), label: d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}) });
-  }
-
-  const rows = months.map(({ key, label }) => {
-    const spend = { needs: 0, wants: 0, savings: 0 };
-    state.transactions.filter(t => {
-      if (t.type !== 'expense') return false;
-      const m = (state.categoryMeta || {})[t.category];
-      if (m && m.kind !== 'personal') return false;
-      return t.date.startsWith(key);
-    }).forEach(t => {
-      const bucket = (buckets[t.category]) || 'needs';
-      if (bucket !== 'unassigned') spend[bucket] = (spend[bucket]||0) + t.amount;
-    });
-    return { label, spend };
-  });
-
-  const el = document.getElementById('budget-monthly-table');
-  const hasData = rows.some(r => Object.values(r.spend).some(v => v > 0));
-  if (!hasData) {
-    el.innerHTML = `<div style="font-size:13px;color:var(--ink-2)">No personal expenses recorded for this tax year yet.</div>`;
-    return;
-  }
-
-  el.innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead>
-        <tr style="border-bottom:1px solid var(--line)">
-          <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--ink-2)">Month</th>
-          ${bucketDefs.map(b=>`<th style="padding:6px 8px;text-align:right;font-size:11px;color:var(--ink-2)">${b.label}</th>`).join('')}
-          <th style="padding:6px 8px;text-align:right;font-size:11px;color:var(--ink-2)">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map(({ label, spend }) => {
-          const total = Object.values(spend).reduce((a,b)=>a+b,0);
-          if (total === 0) return '';
-          return `<tr style="border-bottom:1px solid var(--line)">
-            <td style="padding:8px 8px;font-weight:500">${label}</td>
-            ${bucketDefs.map(b => {
-              const s = spend[b.key]||0;
-              const a = budgetPeriod==='monthly' ? alloc[b.key] : alloc[b.key]/12;
-              const over = a > 0 && s > a;
-              return `<td style="padding:8px 8px;text-align:right;color:${over?'var(--warn)':'var(--ink)'}">${s>0?fmtGBP(s):'—'}</td>`;
-            }).join('')}
-            <td style="padding:8px 8px;text-align:right;font-weight:500">${fmtGBP(total)}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
-}
-
-// ── Business tab renderer ──────────────────────────────────────
 function renderBudgetBusiness() {
   const ty  = selectedTaxYear();
   const now = new Date();
