@@ -686,7 +686,9 @@
         <button id="tab-btn-personal" onclick="switchBudgetTab('personal')"
           style="border-radius:0;border:none;padding:8px 24px;font-size:13px;font-weight:500;background:var(--ink);color:#fff">Personal</button>
         <button id="tab-btn-business" onclick="switchBudgetTab('business')"
-          style="border-radius:0;border:none;padding:8px 24px;font-size:13px;font-weight:400;background:#fff;color:var(--ink-2)">Business</button>
+        style="border-radius:0;border:none;padding:8px 24px;font-size:13px;font-weight:400;background:#fff;color:var(--ink-2)">Business</button>
+      <button id="tab-btn-purchases" onclick="switchBudgetTab('purchases')"
+        style="border-radius:0;border:none;padding:8px 24px;font-size:13px;font-weight:400;background:#fff;color:var(--ink-2)">Large Purchases</button>
       </div>
 
       <!-- ── PERSONAL TAB ── -->
@@ -756,6 +758,32 @@
 
       </div>
 
+      <!-- ── LARGE PURCHASES TAB ── -->
+      <div id="budget-tab-purchases" style="display:none">
+
+        <div class="card" style="max-width:680px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="section-title" style="margin:0">Large purchases</div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="amort-toggle" onchange="toggleAmortisation()"
+                  style="width:15px;height:15px;accent-color:var(--accent)">
+                Include in 50/30/20 buckets
+              </label>
+              <button onclick="openAddPurchase()" class="btn-success btn-sm">+ Add purchase</button>
+            </div>
+          </div>
+          <div id="purchases-list"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card" style="max-width:680px">
+          <div class="section-title">Recovery overview</div>
+          <div id="purchases-recovery"></div>
+        </div>
+
+      </div>
+      
       <!-- ── BUSINESS TAB ── -->
       <div id="budget-tab-business" style="display:none">
 
@@ -848,6 +876,50 @@
 </main>
 </div>
 
+  <!-- Add/edit large purchase modal -->
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closePurchaseModal()">×</button>
+    <div class="modal-title">Large purchase</div>
+    <div class="form-row">
+      <label>Description</label>
+      <input type="text" id="pur-desc" placeholder="e.g. Car insurance">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Date paid</label>
+        <input type="date" id="pur-date">
+      </div>
+      <div class="form-row">
+        <label>Total amount (£)</label>
+        <input type="number" id="pur-amount" min="0" step="0.01" placeholder="e.g. 800">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Spread over (months)</label>
+        <input type="number" id="pur-months" min="1" step="1" placeholder="e.g. 12">
+      </div>
+      <div class="form-row">
+        <label>Bucket</label>
+        <select id="pur-bucket">
+          <option value="needs">🏠 Necessities</option>
+          <option value="wants">🎉 Wants</option>
+          <option value="savings">💰 Savings</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notes (optional)</label>
+      <textarea id="pur-notes" rows="2" placeholder="Any extra detail…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closePurchaseModal()">Cancel</button>
+      <button class="btn-success" onclick="savePurchase()">Save</button>
+    </div>
+  </div>
+</div>
+  
 <!-- Edit modal -->
 <div class="modal-overlay" id="editModal">
         <div class="modal">
@@ -2034,15 +2106,20 @@ function renderBudgeting() {
 
 function switchBudgetTab(tab, rerender = true) {
   budgetTab = tab;
-  document.getElementById('budget-tab-personal').style.display = tab === 'personal' ? '' : 'none';
-  document.getElementById('budget-tab-business').style.display = tab === 'business' ? '' : 'none';
-  document.getElementById('tab-btn-personal').style.background = tab === 'personal' ? 'var(--ink)' : '#fff';
-  document.getElementById('tab-btn-personal').style.color      = tab === 'personal' ? '#fff' : 'var(--ink-2)';
-  document.getElementById('tab-btn-business').style.background = tab === 'business' ? 'var(--ink)' : '#fff';
-  document.getElementById('tab-btn-business').style.color      = tab === 'business' ? '#fff' : 'var(--ink-2)';
+  document.getElementById('budget-tab-personal').style.display  = tab === 'personal'  ? '' : 'none';
+  document.getElementById('budget-tab-business').style.display  = tab === 'business'  ? '' : 'none';
+  document.getElementById('budget-tab-purchases').style.display = tab === 'purchases' ? '' : 'none';
+  ['personal','business','purchases'].forEach(t => {
+    const btn = document.getElementById(`tab-btn-${t}`);
+    if (!btn) return;
+    btn.style.background = t === tab ? 'var(--ink)' : '#fff';
+    btn.style.color      = t === tab ? '#fff' : 'var(--ink-2)';
+    btn.style.fontWeight = t === tab ? '500' : '400';
+  });
   if (rerender) {
-    if (tab === 'personal') renderBudgetPersonal();
-    else renderBudgetBusiness();
+    if (tab === 'personal')  renderBudgetPersonal();
+    if (tab === 'business')  renderBudgetBusiness();
+    if (tab === 'purchases') renderPurchasesTab();
   }
 }
 
@@ -2175,6 +2252,13 @@ const personalCats = state.expenseCategories.filter(c => {
     spendByCat[t.category].amount += t.amount;
   });
 
+  // Add amortised large purchase costs into bucket spend if toggle is on
+  if (state.amortiseInBuckets) {
+    ['needs','wants','savings'].forEach(b => {
+      spend[b] = (spend[b] || 0) + getAmortisedSpend(b);
+    });
+  }
+  
   // Results cards
   const bucketDefs = [
     { key: 'needs',   label: '🏠 Necessities', pct: needs,   colour: 'var(--accent)', bgColour: 'var(--accent-bg)' },
@@ -2392,7 +2476,193 @@ function renderBudgetBusiness() {
     : `<div style="font-size:13px;color:var(--ink-2)">No business budget limits set yet. Go to Settings → Expense categories to add them.</div>`;
 }
 
-    
+  // ════════════════════════════════════════════════════════════════
+//  LARGE PURCHASES / SINKING FUND
+//  state.largePurchases = [{ id, desc, date, amount, months, bucket, notes }]
+//  state.amortiseInBuckets = true|false
+// ════════════════════════════════════════════════════════════════
+
+let editPurchaseId = null;
+
+function openAddPurchase() {
+  editPurchaseId = null;
+  document.getElementById('pur-desc').value   = '';
+  document.getElementById('pur-date').value   = new Date().toISOString().split('T')[0];
+  document.getElementById('pur-amount').value = '';
+  document.getElementById('pur-months').value = '';
+  document.getElementById('pur-bucket').value = 'needs';
+  document.getElementById('pur-notes').value  = '';
+  document.getElementById('purchaseModal').classList.add('open');
+}
+
+function openEditPurchase(id) {
+  const p = (state.largePurchases || []).find(p => p.id === id);
+  if (!p) return;
+  editPurchaseId = id;
+  document.getElementById('pur-desc').value   = p.desc;
+  document.getElementById('pur-date').value   = p.date;
+  document.getElementById('pur-amount').value = p.amount;
+  document.getElementById('pur-months').value = p.months;
+  document.getElementById('pur-bucket').value = p.bucket;
+  document.getElementById('pur-notes').value  = p.notes || '';
+  document.getElementById('purchaseModal').classList.add('open');
+}
+
+function closePurchaseModal() {
+  document.getElementById('purchaseModal').classList.remove('open');
+  editPurchaseId = null;
+}
+
+function savePurchase() {
+  const desc   = document.getElementById('pur-desc').value.trim();
+  const date   = document.getElementById('pur-date').value;
+  const amount = parseFloat(document.getElementById('pur-amount').value);
+  const months = parseInt(document.getElementById('pur-months').value);
+  const bucket = document.getElementById('pur-bucket').value;
+  const notes  = document.getElementById('pur-notes').value.trim();
+
+  if (!desc || !date || !amount || !months) return;
+
+  if (!state.largePurchases) state.largePurchases = [];
+
+  const entry = { id: editPurchaseId || uid(), desc, date, amount, months, bucket, notes };
+  if (editPurchaseId) {
+    state.largePurchases = state.largePurchases.map(p => p.id === editPurchaseId ? entry : p);
+  } else {
+    state.largePurchases.push(entry);
+  }
+  save();
+  closePurchaseModal();
+  renderPurchasesTab();
+}
+
+function deletePurchase(id) {
+  if (!confirm('Delete this purchase?')) return;
+  state.largePurchases = (state.largePurchases || []).filter(p => p.id !== id);
+  save();
+  renderPurchasesTab();
+}
+
+function toggleAmortisation() {
+  state.amortiseInBuckets = document.getElementById('amort-toggle').checked;
+  save();
+  renderBudgetPersonal();
+}
+
+// Returns total amortised monthly cost for a given bucket
+function getAmortisedSpend(bucket) {
+  if (!state.amortiseInBuckets) return 0;
+  const now = new Date();
+  return (state.largePurchases || [])
+    .filter(p => {
+      if (p.bucket !== bucket) return false;
+      const paid     = new Date(p.date);
+      const monthsElapsed = (now.getFullYear() - paid.getFullYear()) * 12
+        + (now.getMonth() - paid.getMonth());
+      return monthsElapsed < p.months; // still within spread period
+    })
+    .reduce((sum, p) => sum + (p.amount / p.months), 0);
+}
+
+function renderPurchasesTab() {
+  const purchases = state.largePurchases || [];
+  const toggle    = document.getElementById('amort-toggle');
+  if (toggle) toggle.checked = !!state.amortiseInBuckets;
+
+  const now = new Date();
+  const bucketLabels = { needs: '🏠 Necessities', wants: '🎉 Wants', savings: '💰 Savings' };
+  const bucketColour = { needs: 'var(--accent)', wants: 'var(--info)', savings: 'var(--gold)' };
+
+  // Purchases list
+  const listEl = document.getElementById('purchases-list');
+  if (!purchases.length) {
+    listEl.innerHTML = `<div style="font-size:13px;color:var(--ink-2)">No large purchases recorded yet. Click + Add purchase to get started.</div>`;
+  } else {
+    listEl.innerHTML = purchases.map(p => {
+      const paid          = new Date(p.date);
+      const monthsElapsed = Math.max(0, (now.getFullYear() - paid.getFullYear()) * 12
+        + (now.getMonth() - paid.getMonth()));
+      const monthsLeft    = Math.max(0, p.months - monthsElapsed);
+      const monthly       = p.amount / p.months;
+      const pct           = Math.min(100, (monthsElapsed / p.months) * 100);
+      const complete      = monthsLeft === 0;
+      const colour        = bucketColour[p.bucket] || 'var(--ink)';
+
+      return `
+        <div style="padding:14px 0;border-bottom:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div>
+              <span style="font-weight:500;font-size:14px">${escHtml(p.desc)}</span>
+              <span class="badge badge-gray" style="margin-left:8px">${bucketLabels[p.bucket]}</span>
+              ${complete ? `<span class="badge badge-green" style="margin-left:4px">Recovered ✓</span>` : ''}
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn-sm" onclick="openEditPurchase('${p.id}')">Edit</button>
+              <button class="btn-sm btn-danger" onclick="deletePurchase('${p.id}')">Del</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px">
+            <div style="background:var(--surface);border-radius:var(--radius);padding:8px 10px">
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:3px">Paid</div>
+              <div style="font-size:13px;font-weight:500">${fmtGBP(p.amount)}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:var(--radius);padding:8px 10px">
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:3px">Monthly cost</div>
+              <div style="font-size:13px;font-weight:500;color:${colour}">${fmtGBP(monthly)}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:var(--radius);padding:8px 10px">
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:3px">Months left</div>
+              <div style="font-size:13px;font-weight:500;color:${complete ? 'var(--accent)' : 'var(--ink)'}">${complete ? 'Done' : monthsLeft + ' of ' + p.months}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:var(--radius);padding:8px 10px">
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:3px">Date paid</div>
+              <div style="font-size:13px;font-weight:500">${fmtDate(p.date)}</div>
+            </div>
+          </div>
+          <div class="bar-track">
+            <div class="budget-bar-fill ok" style="width:${pct.toFixed(1)}%;background:${colour}"></div>
+          </div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px">
+            ${complete
+              ? `Fully recovered — no longer counting toward monthly costs`
+              : `Recovering since ${paid.toLocaleDateString('en-GB',{month:'short',year:'numeric'})} · 
+                 done ${new Date(paid.getFullYear(), paid.getMonth() + p.months, 1)
+                   .toLocaleDateString('en-GB',{month:'short',year:'numeric'})}`}
+          </div>
+          ${p.notes ? `<div style="font-size:12px;color:var(--ink-2);margin-top:6px">${escHtml(p.notes)}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // Recovery overview
+  const active   = purchases.filter(p => {
+    const paid = new Date(p.date);
+    const elapsed = (now.getFullYear() - paid.getFullYear()) * 12 + (now.getMonth() - paid.getMonth());
+    return elapsed < p.months;
+  });
+  const totalMonthly = active.reduce((s, p) => s + p.amount / p.months, 0);
+  const totalRemaining = purchases.reduce((s, p) => {
+    const paid    = new Date(p.date);
+    const elapsed = Math.max(0, (now.getFullYear() - paid.getFullYear()) * 12
+      + (now.getMonth() - paid.getMonth()));
+    const left    = Math.max(0, p.months - elapsed);
+    return s + (left * (p.amount / p.months));
+  }, 0);
+
+  document.getElementById('purchases-recovery').innerHTML = active.length ? `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+      <div class="stat"><div class="stat-label">Active purchases</div><div class="stat-value">${active.length}</div></div>
+      <div class="stat"><div class="stat-label">Total monthly cost</div><div class="stat-value red">${fmtGBP(totalMonthly)}</div></div>
+      <div class="stat"><div class="stat-label">Total still to recover</div><div class="stat-value gold">${fmtGBP(totalRemaining)}</div></div>
+    </div>
+    <div style="font-size:13px;color:var(--ink-2)">
+      Once all spread periods complete, you will free up <strong>${fmtGBP(totalMonthly)}/month</strong> 
+      — save that amount each month and your accounts will replenish.
+    </div>` 
+    : `<div style="font-size:13px;color:var(--ink-2)">All purchases fully recovered — great work! 🎉</div>`;
+}
+
+  
   // ════════════════════════════════════════════════════════════════
 //  TAX BENEFITS PAGE
 //  To add a new item: add an object to TAX_ITEMS below.
