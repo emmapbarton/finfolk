@@ -1028,7 +1028,7 @@ function renderPSpending() {
 
   // Budget bars for personal categories
   const meta = S.categoryMeta||{};
-  const catsWithLimits = S.pExpenseCategories.filter(c=>meta[c]&&meta[c].limit&&meta[c].kind==='personal');
+  const catsWithLimits = S.pExpenseCategories.filter(c=>meta[c]&&meta[c].limit);
   if (catsWithLimits.length) {
     document.getElementById('p-budget-bars').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">` +
       catsWithLimits.map(cat=>{
