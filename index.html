@@ -1166,7 +1166,8 @@ function renderSTOverview() {
   const txns=S.transactions.filter(t=>t.mode==='soletrader'&&inSelectedTY(t.date));
   const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expenses=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const profit=income-expenses;
+  const mileageDed=getMileageDeduction();
+  const profit=income-expenses-mileageDed;
   const rate=parseFloat(document.getElementById('taxRateSelect')?.value)||0.28;
   const taxRes=Math.max(0,profit*rate);
   const withheld=txns.filter(t=>t.type==='income'&&t.taxWithheld).reduce((s,t)=>s+(t.taxWithheld||0),0);
@@ -1189,6 +1190,7 @@ function renderSTOverview() {
   document.getElementById('st-net-position').innerHTML=`
     <div class="net-pos-row"><span>Gross invoiced</span><span style="color:var(--st)">${fmt(income)}</span></div>
     <div class="net-pos-row"><span>Less: business expenses</span><span style="color:var(--warn)">−${fmt(expenses)}</span></div>
+    ${mileageDed>0?`<div class="net-pos-row"><span>Less: mileage deduction</span><span style="color:var(--warn)">−${fmt(mileageDed)}</span></div>`:''}
     <div class="net-pos-row"><span>Less: tax reserve (${(rate*100).toFixed(0)}%)</span><span style="color:var(--gold)">−${fmt(taxRes)}</span></div>
     ${withheld>0?`<div class="net-pos-row indent"><span>Tax already withheld</span><span>${fmt(withheld)}</span></div>`:''}
     <div class="net-pos-row total"><span>What's actually yours</span><span style="color:var(--info)">${fmt(netYours)}</span></div>
