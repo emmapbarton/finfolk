@@ -390,6 +390,35 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
     </div>
   </div>
   <div id="csv-preview"></div>
+
+  <!-- Mileage section -->
+  <div class="card" style="max-width:640px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="section-title" style="margin:0">🚗 Mileage log</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <select id="mileage-method" onchange="saveMileageSettings()" style="width:auto;font-size:12px">
+          <option value="flatrate">Flat rate (45p/mile)</option>
+          <option value="actual">Actual costs</option>
+        </select>
+        <button class="btn-st btn-sm" onclick="openMileageModal()">+ Log journey</button>
+      </div>
+    </div>
+    <div id="mileage-method-comparison" style="margin-bottom:12px"></div>
+    <div class="stat-grid" id="mileage-stats" style="margin-bottom:12px"></div>
+    <div id="wear-tear-row" style="display:none;margin-bottom:12px">
+      <label style="font-size:12px;color:var(--ink-2)">Wear & tear rate (£/mile):
+        <input type="number" id="mileage-wear-tear" min="0" step="0.01" placeholder="0.15" oninput="saveMileageSettings()" style="width:80px;margin-left:8px;font-size:12px;padding:4px 8px">
+      </label>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Purpose</th><th class="text-right">Miles</th><th class="text-right">Fuel</th><th class="text-right">Deduction</th><th></th></tr></thead>
+        <tbody id="mileage-body"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="mileage-empty" style="display:none"><span class="icon">🚗</span>No journeys logged yet.</div>
+  </div>
+
   <div class="card" style="padding:0;overflow:hidden">
     <div class="tbl-wrap">
       <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="text-right">Amount</th><th>Allocated</th><th></th></tr></thead>
@@ -399,23 +428,110 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
   </div>
 </div>
 
+<!-- ── SOLE TRADER MILEAGE ── -->
+<div class="page" id="page-st-mileage">
+  <div class="page-title"><span class="mode-chip st">Sole Trader</span>Mileage</div>
+  <div class="page-sub">Log journeys once — choose flat rate or actual costs per tax year</div>
+
+  <!-- Method selector + settings -->
+  <div class="card" style="max-width:640px">
+    <div class="section-title">Tax year settings</div>
+    <div class="form-grid">
+      <div class="form-row" style="margin:0">
+        <label>Deduction method</label>
+        <select id="mileage-method" onchange="saveMileageSettings()">
+          <option value="flatrate">Flat rate (45p/mile HMRC)</option>
+          <option value="actual">Actual costs (fuel + wear & tear)</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin:0" id="wear-tear-row">
+        <label>Wear & tear rate (p/mile)</label>
+        <input type="number" id="mileage-wear-tear" min="0" step="0.01" placeholder="e.g. 0.15" oninput="saveMileageSettings()">
+      </div>
+    </div>
+    <div id="mileage-method-comparison" style="margin-top:14px"></div>
+  </div>
+
+  <!-- Log a journey -->
+  <div class="card" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="section-title" style="margin:0">Journey log</div>
+      <button class="btn-st btn-sm" onclick="openMileageModal()">+ Log journey</button>
+    </div>
+    <div class="stat-grid" id="mileage-stats" style="margin-bottom:16px"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Purpose</th><th class="text-right">Miles</th><th class="text-right">Fuel cost</th><th class="text-right">Deduction</th><th></th></tr></thead>
+        <tbody id="mileage-body"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="mileage-empty" style="display:none"><span class="icon">🚗</span>No journeys logged yet.</div>
+  </div>
+</div>
+
 <!-- ── SOLE TRADER TAX ── -->
 <div class="page" id="page-st-tax">
   <div class="page-title"><span class="mode-chip st">Sole Trader</span>Tax Summary</div>
-  <div class="page-sub">SA103 self-employment estimate</div>
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+  <div class="page-sub">UK self-assessment estimate including employment income</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <label style="font-size:13px;color:var(--ink-2)">Tax year:</label>
     <select id="taxYearSelect" style="width:auto;font-size:13px"></select>
-    <label style="font-size:13px;color:var(--ink-2);margin-left:12px">Rate:</label>
+    <label style="font-size:13px;color:var(--ink-2);margin-left:12px">ST rate est.:</label>
     <select id="taxRateSelect" style="width:auto;font-size:13px">
       <option value="0.25">25%</option><option value="0.28" selected>28%</option><option value="0.30">30%</option>
     </select>
   </div>
-  <div class="stat-grid" id="st-tax-stats"></div>
-  <div class="card" style="max-width:560px">
-    <div class="section-title">Tax computation</div>
-    <div id="st-tax-rows"></div>
-    <div style="font-size:12px;color:var(--ink-3);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">Estimate only — does not include Class 2 NI, student loan, or prior-year adjustments. Consult an accountant before filing.</div>
+
+  <!-- Tab switcher -->
+  <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;width:fit-content">
+    <button id="tax-tab-st" onclick="switchTaxTab('st')" style="border-radius:0;border:none;padding:8px 20px;font-size:13px;font-weight:500;background:var(--ink);color:#fff">Sole Trader only</button>
+    <button id="tax-tab-combined" onclick="switchTaxTab('combined')" style="border-radius:0;border:none;padding:8px 20px;font-size:13px;background:#fff;color:var(--ink-2)">Combined tax bill</button>
+  </div>
+
+  <!-- SOLE TRADER TAB -->
+  <div id="tax-content-st">
+    <div class="stat-grid" id="st-tax-stats"></div>
+    <div class="card" style="max-width:560px">
+      <div class="section-title">Sole trader computation</div>
+      <div id="st-tax-rows"></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">This view calculates your sole trader tax in isolation. Use the Combined tab for your real self-assessment figure.</div>
+    </div>
+  </div>
+
+  <!-- COMBINED TAB -->
+  <div id="tax-content-combined" style="display:none">
+    <!-- Employment income inputs -->
+    <div class="card" style="max-width:600px">
+      <div class="section-title">Employment income (from your P60 / payslips)</div>
+      <div class="form-grid">
+        <div class="form-row" style="margin:0">
+          <label>Gross salary (£)</label>
+          <input type="number" id="emp-gross" min="0" step="1" placeholder="e.g. 32000" oninput="saveEmploymentInputs();renderCombinedTax()">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>PAYE tax already paid (£)</label>
+          <input type="number" id="emp-paye-paid" min="0" step="1" placeholder="e.g. 4000" oninput="saveEmploymentInputs();renderCombinedTax()">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Employee NIC paid (£)</label>
+          <input type="number" id="emp-nic-paid" min="0" step="1" placeholder="e.g. 2500" oninput="saveEmploymentInputs();renderCombinedTax()">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Employee pension contributions (£)</label>
+          <input type="number" id="emp-pension" min="0" step="1" placeholder="e.g. 1600" oninput="saveEmploymentInputs();renderCombinedTax()">
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:10px">These figures are saved per tax year. Update them when you receive your P60 each April.</div>
+    </div>
+    <!-- Combined computation -->
+    <div class="card" style="max-width:600px">
+      <div class="section-title">Combined self-assessment calculation</div>
+      <div id="combined-tax-rows"></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">
+        Estimate only. Does not include Class 2 NI, student loan, Gift Aid, or prior-year adjustments. Consult an accountant before filing your SA100.
+      </div>
+    </div>
+    <div class="stat-grid" id="combined-tax-stats" style="max-width:600px"></div>
   </div>
 </div>
 
@@ -599,6 +715,31 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
       <button onclick="skipAlloc()">Skip for now</button>
       <button class="btn-success" onclick="saveAllocation()">Save allocation</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ MILEAGE MODAL ══ -->
+<div class="modal-overlay" id="mileageModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeMileageModal()">×</button>
+    <div class="modal-title" id="mileage-modal-title">Log journey</div>
+    <div class="form-grid">
+      <div class="form-row"><label>Date</label><input type="date" id="m-date"></div>
+      <div class="form-row"><label>Miles</label><input type="number" id="m-miles" min="0" step="0.1" placeholder="e.g. 24.5"></div>
+    </div>
+    <div class="form-row"><label>Description / route</label><input type="text" id="m-desc" placeholder="e.g. Home → client site, Dog sitting visit"></div>
+    <div class="form-row"><label>Purpose</label>
+      <select id="m-purpose">
+        <option value="PreQlinic">PreQlinic</option>
+        <option value="Dog Sitting">Dog Sitting</option>
+        <option value="Other">Other business</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Fuel cost for this journey (£) — optional, for actual cost method</label>
+      <input type="number" id="m-fuel" min="0" step="0.01" placeholder="e.g. 8.40">
+    </div>
+    <div id="m-deduction-preview" style="font-size:13px;color:var(--ink-2);padding:8px 10px;background:var(--surface);border-radius:6px;margin-bottom:14px"></div>
+    <div class="modal-actions"><button onclick="closeMileageModal()">Cancel</button><button class="btn-success" onclick="saveMileageEntry()">Save journey</button></div>
   </div>
 </div>
 
@@ -1154,6 +1295,7 @@ function renderSTOverview() {
 // ════════════════════════════════════════════════════════════════
 function renderSTTransactions() {
   if(S.sheetUrl){const el=document.getElementById('sheet-url');if(el&&!el.value)el.value=S.sheetUrl;}
+  renderMileage();
   const txns=S.transactions.filter(t=>t.mode==='soletrader');
   const allCats=['All','Income','Expense',...new Set(txns.map(t=>t.category))];
   document.getElementById('st-cat-filters').innerHTML=allCats.map(c=>
@@ -1205,53 +1347,412 @@ function renderSTTransactions() {
 function setSTFilter(c){activeSTFilter=c;renderSTTransactions();}
 
 // ════════════════════════════════════════════════════════════════
-//  SOLE TRADER TAX SUMMARY
+//  MILEAGE TRACKER
+//  S.mileageLog     = [{ id, date, desc, miles, purpose, fuelCost }]
+//  S.mileageSettings[ty] = { method:'flatrate'|'actual', wearTearPpm:0.15 }
 // ════════════════════════════════════════════════════════════════
-function renderSTTax() {
-  const ty=selectedTY();
-  const txns=S.transactions.filter(t=>t.mode==='soletrader'&&inSelectedTY(t.date));
-  const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expenses=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const mileageDeduction=S.transactions.filter(t=>t.mode==='soletrader'&&inSelectedTY(t.date)&&t.isMileage&&t.deductible).reduce((s,t)=>s+(t.miles||0)*0.45,0);
-  const totalExp=expenses+mileageDeduction;
-  const profit=income-totalExp;
-  const PA=12570;
-  const rate=parseFloat(document.getElementById('taxRateSelect')?.value)||0.28;
-  const taxable=Math.max(0,profit-PA);
-  const it=taxable*0.20;
-  const ni=taxable*0.09;
-  const totalTax=it+ni;
-  const withheld=txns.filter(t=>t.type==='income'&&t.taxWithheld).reduce((s,t)=>s+(t.taxWithheld||0),0);
+let editMileageId = null;
 
-  document.getElementById('st-tax-stats').innerHTML=[
-    {label:'Gross income',value:fmt(income),cls:'st-c'},
-    {label:'Net profit',value:fmt(profit),cls:profit>=0?'blue':'red'},
-    {label:'Estimated tax',value:fmt(totalTax),cls:'gold'},
-    {label:'Already withheld',value:fmt(withheld),cls:''},
-    {label:'Still to set aside',value:fmt(Math.max(0,totalTax-withheld)),cls:'warn'},
+// HMRC approved mileage rates 2024-25
+const MILEAGE_RATE_FIRST  = 0.45;  // first 10,000 miles
+const MILEAGE_RATE_AFTER  = 0.25;  // after 10,000
+
+function getMileageSettings() {
+  const ty = selectedTY();
+  if (!S.mileageSettings) S.mileageSettings = {};
+  return S.mileageSettings[ty] || { method: 'flatrate', wearTearPpm: 0.15 };
+}
+
+function saveMileageSettings() {
+  const ty = selectedTY();
+  if (!S.mileageSettings) S.mileageSettings = {};
+  S.mileageSettings[ty] = {
+    method:       document.getElementById('mileage-method').value,
+    wearTearPpm:  parseFloat(document.getElementById('mileage-wear-tear').value) || 0.15,
+  };
+  saveState();
+  renderMileage();
+  // refresh tax if on that page
+  if (document.getElementById('page-st-tax').classList.contains('active')) renderSTTax();
+}
+
+function flatRateDeduction(miles) {
+  // 45p for first 10,000, 25p after
+  if (miles <= 10000) return miles * MILEAGE_RATE_FIRST;
+  return (10000 * MILEAGE_RATE_FIRST) + ((miles - 10000) * MILEAGE_RATE_AFTER);
+}
+
+function getMileageDeduction() {
+  // Returns the deduction to use in tax calcs based on selected method
+  const ty       = selectedTY();
+  const settings = getMileageSettings();
+  const logs     = (S.mileageLog || []).filter(m => inSelectedTY(m.date));
+  const totalMiles = logs.reduce((s, m) => s + (parseFloat(m.miles) || 0), 0);
+  if (settings.method === 'flatrate') {
+    return flatRateDeduction(totalMiles);
+  } else {
+    // Actual: sum of fuel costs + wear & tear per mile
+    const fuelTotal = logs.reduce((s, m) => s + (parseFloat(m.fuelCost) || 0), 0);
+    const wearTear  = totalMiles * (settings.wearTearPpm || 0.15);
+    return fuelTotal + wearTear;
+  }
+}
+
+function openMileageModal(id) {
+  editMileageId = id || null;
+  const entry = id ? (S.mileageLog || []).find(m => m.id === id) : null;
+  document.getElementById('mileage-modal-title').textContent = id ? 'Edit journey' : 'Log journey';
+  document.getElementById('m-date').value    = entry ? entry.date    : todayStr();
+  document.getElementById('m-miles').value   = entry ? entry.miles   : '';
+  document.getElementById('m-desc').value    = entry ? entry.desc    : '';
+  document.getElementById('m-purpose').value = entry ? entry.purpose : 'PreQlinic';
+  document.getElementById('m-fuel').value    = entry ? (entry.fuelCost || '') : '';
+  updateMileagePreview();
+  document.getElementById('mileageModal').classList.add('open');
+}
+
+function closeMileageModal() {
+  document.getElementById('mileageModal').classList.remove('open');
+  editMileageId = null;
+}
+
+function updateMileagePreview() {
+  const miles    = parseFloat(document.getElementById('m-miles').value) || 0;
+  const fuel     = parseFloat(document.getElementById('m-fuel').value)  || 0;
+  const settings = getMileageSettings();
+  const el       = document.getElementById('m-deduction-preview');
+  if (!miles) { el.textContent = ''; return; }
+  const flat   = flatRateDeduction(miles);
+  const actual = fuel + (miles * (settings.wearTearPpm || 0.15));
+  el.innerHTML = `Flat rate deduction: <strong style="color:var(--accent)">${fmt(flat)}</strong>
+    &nbsp;·&nbsp; Actual cost deduction: <strong style="color:var(--info)">${fmt(actual)}</strong>
+    &nbsp;·&nbsp; Currently using: <strong>${settings.method === 'flatrate' ? 'flat rate' : 'actual costs'}</strong>`;
+}
+
+function saveMileageEntry() {
+  const date    = document.getElementById('m-date').value;
+  const miles   = parseFloat(document.getElementById('m-miles').value);
+  const desc    = document.getElementById('m-desc').value.trim();
+  const purpose = document.getElementById('m-purpose').value;
+  const fuel    = parseFloat(document.getElementById('m-fuel').value) || 0;
+  if (!date || !miles || !desc) return;
+  if (!S.mileageLog) S.mileageLog = [];
+  const entry = { id: editMileageId || uid(), date, miles, desc, purpose, fuelCost: fuel };
+  if (editMileageId) S.mileageLog = S.mileageLog.map(m => m.id === editMileageId ? entry : m);
+  else S.mileageLog.push(entry);
+  saveState();
+  closeMileageModal();
+  renderMileage();
+}
+
+function deleteMileageEntry(id) {
+  if (!confirm('Delete this journey?')) return;
+  S.mileageLog = (S.mileageLog || []).filter(m => m.id !== id);
+  saveState();
+  renderMileage();
+}
+
+function renderMileage() {
+  const ty       = selectedTY();
+  const settings = getMileageSettings();
+  const logs     = (S.mileageLog || []).filter(m => inSelectedTY(m.date)).sort((a,b) => new Date(b.date) - new Date(a.date));
+  const totalMiles = logs.reduce((s, m) => s + (parseFloat(m.miles) || 0), 0);
+  const flatDed    = flatRateDeduction(totalMiles);
+  const totalFuel  = logs.reduce((s, m) => s + (parseFloat(m.fuelCost) || 0), 0);
+  const actualDed  = totalFuel + totalMiles * (settings.wearTearPpm || 0.15);
+  const activeDed  = settings.method === 'flatrate' ? flatDed : actualDed;
+
+  // Load saved settings into form
+  const methodEl = document.getElementById('mileage-method');
+  const wtEl     = document.getElementById('mileage-wear-tear');
+  if (methodEl) methodEl.value = settings.method;
+  if (wtEl)     wtEl.value     = settings.wearTearPpm || 0.15;
+
+  // Show/hide wear & tear row
+  const wtRow = document.getElementById('wear-tear-row');
+  if (wtRow) wtRow.style.display = settings.method === 'actual' ? '' : 'none';
+
+  // Method comparison
+  const compEl = document.getElementById('mileage-method-comparison');
+  if (compEl && totalMiles > 0) {
+    const better = flatDed >= actualDed ? 'flat rate' : 'actual costs';
+    const diff   = Math.abs(flatDed - actualDed);
+    compEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="padding:10px 14px;background:${settings.method==='flatrate'?'var(--accent-bg)':'var(--surface)'};border:1px solid ${settings.method==='flatrate'?'#b8d9c3':'var(--line)'};border-radius:var(--r)">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:4px">Flat rate (45p/mile)</div>
+          <div style="font-size:18px;font-weight:300;color:var(--accent)">${fmt(flatDed)}</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:3px">${totalMiles.toFixed(1)} miles</div>
+        </div>
+        <div style="padding:10px 14px;background:${settings.method==='actual'?'var(--info-bg)':'var(--surface)'};border:1px solid ${settings.method==='actual'?'#b8cde8':'var(--line)'};border-radius:var(--r)">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin-bottom:4px">Actual costs</div>
+          <div style="font-size:18px;font-weight:300;color:var(--info)">${fmt(actualDed)}</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:3px">Fuel: ${fmt(totalFuel)} + wear: ${fmt(totalMiles * (settings.wearTearPpm||0.15))}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-2);margin-top:10px">
+        💡 <strong>${better}</strong> gives you a ${fmt(diff)} higher deduction this year.
+        ${settings.method !== better ? `<span style="color:var(--warn)">You are currently using the lower method.</span>` : ''}
+      </div>`;
+  } else if (compEl) {
+    compEl.innerHTML = '<div style="font-size:13px;color:var(--ink-2)">Log some journeys to see the comparison.</div>';
+  }
+
+  // Stats
+  const statsEl = document.getElementById('mileage-stats');
+  if (statsEl) statsEl.innerHTML = [
+    { label:'Total miles',     value: totalMiles.toFixed(1)+'mi', cls:'' },
+    { label:'Active deduction',value: fmt(activeDed),              cls:'st-c' },
+    { label:'Flat rate value', value: fmt(flatDed),                cls:'green' },
+    { label:'Actual cost value',value:fmt(actualDed),              cls:'blue' },
   ].map(s=>`<div class="stat"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
 
-  const rows=[
-    {label:'Total income',value:income,bold:false},
-    {label:'Less: allowable expenses',value:-expenses,bold:false},
-    ...(mileageDeduction>0?[{label:'  — mileage deduction',value:-mileageDeduction,indent:true}]:[]),
-    {label:'Gross profit',value:profit,bold:true},
-    {label:'Less: personal allowance',value:-Math.min(PA,profit),bold:false},
-    {label:'Taxable profit',value:taxable,bold:true},
-    {label:'Income tax (20%)',value:it,bold:false},
-    {label:'Class 4 NI (9%)',value:ni,bold:false},
-    {label:'Estimated total tax',value:totalTax,bold:true,highlight:true},
-    {label:'Tax already withheld',value:-withheld,bold:false},
-    {label:'Still to set aside',value:Math.max(0,totalTax-withheld),bold:true,highlight:true},
+  // Table
+  const tbody = document.getElementById('mileage-body');
+  const empty = document.getElementById('mileage-empty');
+  if (!logs.length) { if(tbody)tbody.innerHTML=''; if(empty)empty.style.display='block'; return; }
+  if(empty) empty.style.display='none';
+
+  // Running total for flat-rate band tracking
+  let runningMiles = 0;
+  if (tbody) tbody.innerHTML = logs.map(m => {
+    const miles    = parseFloat(m.miles) || 0;
+    const fuel     = parseFloat(m.fuelCost) || 0;
+    const wear     = miles * (settings.wearTearPpm || 0.15);
+    const flatThis = miles <= (10000 - runningMiles)
+      ? miles * MILEAGE_RATE_FIRST
+      : ((10000 - runningMiles) * MILEAGE_RATE_FIRST) + (Math.max(0, miles - (10000 - runningMiles)) * MILEAGE_RATE_AFTER);
+    const actualThis = fuel + wear;
+    const deductionThis = settings.method === 'flatrate' ? flatThis : actualThis;
+    runningMiles += miles;
+    return `<tr>
+      <td>${fmtD(m.date)}</td>
+      <td>${escH(m.desc)}</td>
+      <td><span class="badge badge-gray">${escH(m.purpose)}</span></td>
+      <td class="text-right">${miles.toFixed(1)}</td>
+      <td class="text-right">${fuel > 0 ? fmt(fuel) : '—'}</td>
+      <td class="text-right" style="font-weight:500;color:var(--st)">${fmt(deductionThis)}</td>
+      <td class="text-right">
+        <button class="btn-sm" onclick="openMileageModal('${m.id}')" style="margin-right:4px">Edit</button>
+        <button class="btn-sm btn-danger" onclick="deleteMileageEntry('${m.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SOLE TRADER TAX — TABBED
+// ════════════════════════════════════════════════════════════════
+let activeTaxTab = 'st';
+
+function switchTaxTab(tab) {
+  activeTaxTab = tab;
+  document.getElementById('tax-content-st').style.display       = tab === 'st'       ? '' : 'none';
+  document.getElementById('tax-content-combined').style.display = tab === 'combined' ? '' : 'none';
+  document.getElementById('tax-tab-st').style.background       = tab === 'st'       ? 'var(--ink)' : '#fff';
+  document.getElementById('tax-tab-st').style.color            = tab === 'st'       ? '#fff'       : 'var(--ink-2)';
+  document.getElementById('tax-tab-combined').style.background = tab === 'combined' ? 'var(--ink)' : '#fff';
+  document.getElementById('tax-tab-combined').style.color      = tab === 'combined' ? '#fff'       : 'var(--ink-2)';
+  if (tab === 'combined') { loadEmploymentInputs(); renderCombinedTax(); }
+  else renderSTTaxST();
+}
+
+function renderSTTax() {
+  buildTaxYearSelect();
+  loadEmploymentInputs();
+  if (activeTaxTab === 'st') renderSTTaxST();
+  else { switchTaxTab('combined'); }
+}
+
+function renderSTTaxST() {
+  const ty     = selectedTY();
+  const txns   = S.transactions.filter(t => t.mode === 'soletrader' && inSelectedTY(t.date));
+  const income   = txns.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const expenses = txns.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const mileageDed = getMileageDeduction();
+  const totalExp = expenses + mileageDed;
+  const profit   = income - totalExp;
+  const PA       = 12570;
+  const taxable  = Math.max(0, profit - PA);
+  const it       = taxable * 0.20;
+  const ni       = taxable * 0.09;
+  const totalTax = it + ni;
+  const withheld = txns.filter(t => t.type === 'income' && t.taxWithheld).reduce((s,t) => s + (t.taxWithheld||0), 0);
+
+  document.getElementById('st-tax-stats').innerHTML = [
+    { label:'Gross income',      value: fmt(income),                       cls:'st-c' },
+    { label:'Net profit',        value: fmt(profit),                       cls: profit >= 0 ? 'blue' : 'red' },
+    { label:'Mileage deduction', value: fmt(mileageDed),                   cls:'green' },
+    { label:'Estimated tax',     value: fmt(totalTax),                     cls:'gold' },
+    { label:'Still to set aside',value: fmt(Math.max(0, totalTax - withheld)), cls:'warn' },
+  ].map(s=>`<div class="stat"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
+
+  const rows = [
+    { label:'Total sole trader income',  value: income,                          bold:false },
+    { label:'Less: allowable expenses',  value: -expenses,                       bold:false },
+    ...(mileageDed > 0 ? [{ label:`  — mileage (${getMileageSettings().method === 'flatrate' ? 'flat rate' : 'actual'})`, value: -mileageDed, indent:true }] : []),
+    { label:'Gross profit',              value: profit,                          bold:true },
+    { label:'Less: personal allowance',  value: -Math.min(PA, profit),           bold:false },
+    { label:'Taxable profit',            value: taxable,                         bold:true },
+    { label:'Income tax (20% basic)',    value: it,                              bold:false },
+    { label:'Class 4 NI (9%)',           value: ni,                              bold:false },
+    { label:'Estimated tax on ST income',value: totalTax,                        bold:true, highlight:true },
+    ...(withheld > 0 ? [{ label:'Tax already withheld', value: -withheld, bold:false }] : []),
+    { label:'Still to set aside',        value: Math.max(0, totalTax - withheld), bold:true, highlight:true },
   ];
 
-  document.getElementById('st-tax-rows').innerHTML=rows.map(r=>`
-    <div class="net-pos-row ${r.highlight?'total':''}" style="${r.indent?'padding-left:20px;':''}${r.highlight?'background:var(--gold-bg);margin:0 -22px;padding:10px 22px;':''}">
-      <span style="color:${r.indent?'var(--ink-2)':'var(--ink)'}${r.bold?';font-weight:500':''}">${r.label}</span>
-      <span style="font-weight:${r.bold?'600':'400'};color:${r.value<0?'var(--warn)':r.highlight?'var(--gold)':'var(--ink)'}">
-        ${r.value<0?'('+fmt(Math.abs(r.value))+')':fmt(r.value)}
+  document.getElementById('st-tax-rows').innerHTML = rows.map(r => `
+    <div class="net-pos-row ${r.highlight ? 'total' : ''}" style="${r.indent ? 'padding-left:20px;' : ''}${r.highlight ? 'background:var(--gold-bg);margin:0 -22px;padding:10px 22px;' : ''}">
+      <span style="color:${r.indent ? 'var(--ink-2)' : 'var(--ink)'}${r.bold ? ';font-weight:500' : ''}">${r.label}</span>
+      <span style="font-weight:${r.bold ? '600' : '400'};color:${r.value < 0 ? 'var(--warn)' : r.highlight ? 'var(--gold)' : 'var(--ink)'}">
+        ${r.value < 0 ? '(' + fmt(Math.abs(r.value)) + ')' : fmt(r.value)}
       </span>
     </div>`).join('');
+}
+
+// ── Employment inputs — saved per tax year ─────────────────────
+function saveEmploymentInputs() {
+  const ty = selectedTY();
+  if (!S.employmentIncome) S.employmentIncome = {};
+  S.employmentIncome[ty] = {
+    grossSalary: parseFloat(document.getElementById('emp-gross').value)     || 0,
+    payeTaxPaid: parseFloat(document.getElementById('emp-paye-paid').value) || 0,
+    employeeNIC: parseFloat(document.getElementById('emp-nic-paid').value)  || 0,
+    pension:     parseFloat(document.getElementById('emp-pension').value)   || 0,
+  };
+  saveState();
+}
+
+function loadEmploymentInputs() {
+  const ty  = selectedTY();
+  const emp = (S.employmentIncome || {})[ty] || {};
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('emp-gross',     emp.grossSalary);
+  set('emp-paye-paid', emp.payeTaxPaid);
+  set('emp-nic-paid',  emp.employeeNIC);
+  set('emp-pension',   emp.pension);
+}
+
+// ── Combined tax calculation ───────────────────────────────────
+function renderCombinedTax() {
+  const ty   = selectedTY();
+  const emp  = (S.employmentIncome || {})[ty] || {};
+  const txns = S.transactions.filter(t => t.mode === 'soletrader' && inSelectedTY(t.date));
+
+  // Employment figures
+  const empGross   = emp.grossSalary || 0;
+  const payePaid   = emp.payeTaxPaid || 0;
+  const nicPaid    = emp.employeeNIC || 0;
+  const empPension = emp.pension     || 0;
+
+  // Sole trader figures
+  const stIncome   = txns.filter(t => t.type === 'income').reduce((s,t)  => s + t.amount, 0);
+  const stExpenses = txns.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const mileageDed = getMileageDeduction();
+  const stProfit   = stIncome - stExpenses - mileageDed;
+
+  // UK 2024-25 bands
+  const PA    = 12570;
+  const BRL   = 50270;  // basic rate limit (PA + basic band)
+  const HRL   = 125140; // higher rate limit
+
+  // Personal allowance tapering above £100k
+  const totalGross = empGross + Math.max(0, stProfit);
+  const effectivePA = totalGross > 100000
+    ? Math.max(0, PA - Math.floor((totalGross - 100000) / 2))
+    : PA;
+
+  // How much PA is used by employment income
+  const paUsedByEmp  = Math.min(effectivePA, empGross - empPension);
+  const paRemainingForST = Math.max(0, effectivePA - paUsedByEmp);
+
+  // Taxable employment income (after pension and PA)
+  const empTaxableIncome = Math.max(0, empGross - empPension - paUsedByEmp);
+
+  // ST taxable income — uses remaining PA, then stacks on top of employment bands
+  const stTaxableIncome = Math.max(0, stProfit - paRemainingForST);
+
+  // Income tax on employment (basic / higher / additional)
+  function calcIT(taxable, alreadyUsedBands) {
+    let tax = 0;
+    const basicBand  = BRL - PA;
+    const higherBand = HRL - BRL;
+    const basicLeft  = Math.max(0, basicBand - alreadyUsedBands);
+    const basic      = Math.min(taxable, basicLeft);
+    const higher     = Math.min(Math.max(0, taxable - basic), higherBand);
+    const addl       = Math.max(0, taxable - basic - higher);
+    tax = basic * 0.20 + higher * 0.40 + addl * 0.45;
+    return { tax, basicUsed: basic };
+  }
+
+  const empIT = calcIT(empTaxableIncome, 0);
+  const stIT  = calcIT(stTaxableIncome, empIT.basicUsed);
+
+  // Class 4 NI on sole trader profit (not employment NIC)
+  const stNIThreshold = 12570;
+  const stNIUpper     = 50270;
+  let stNI = 0;
+  if (stProfit > stNIThreshold) {
+    const mainBand = Math.min(stProfit, stNIUpper) - stNIThreshold;
+    const upper    = Math.max(0, stProfit - stNIUpper);
+    stNI = mainBand * 0.09 + upper * 0.02;
+  }
+
+  const totalITDue   = empIT.tax + stIT.tax;
+  const totalNICDue  = nicPaid + stNI; // emp NIC already paid; ST NI still to pay
+  const totalDue     = totalITDue + stNI;
+  const alreadyPaid  = payePaid + nicPaid;
+  const selfAssessmentBill = Math.max(0, totalDue - payePaid);
+
+  // Render rows
+  const rowFn = (label, value, opts = {}) => `
+    <div class="net-pos-row ${opts.total ? 'total' : ''} ${opts.sep ? 'indent' : ''}"
+      style="${opts.highlight ? 'background:var(--gold-bg);margin:0 -22px;padding:10px 22px;' : ''}${opts.sa ? 'background:var(--warn-bg);margin:0 -22px;padding:12px 22px;border-radius:0;' : ''}${opts.indent ? 'padding-left:20px;' : ''}">
+      <span style="${opts.muted ? 'color:var(--ink-2);' : ''}${opts.total||opts.bold ? 'font-weight:600;' : ''}">${label}</span>
+      <span style="font-weight:${opts.total||opts.bold ? '600' : '400'};color:${opts.sa ? 'var(--warn)' : opts.highlight ? 'var(--gold)' : value < 0 ? 'var(--warn)' : opts.good ? 'var(--accent)' : 'var(--ink)'}">
+        ${value < 0 ? '(' + fmt(Math.abs(value)) + ')' : fmt(value)}
+      </span>
+    </div>`;
+
+  document.getElementById('combined-tax-rows').innerHTML = [
+    // Employment section
+    `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--personal);margin-bottom:6px;margin-top:4px">Employment income</div>`,
+    rowFn('Gross salary', empGross),
+    empPension > 0 ? rowFn('Less: pension contributions', -empPension, {indent:true,muted:true}) : '',
+    rowFn('Less: personal allowance used', -paUsedByEmp, {indent:true,muted:true}),
+    rowFn('Taxable employment income', empTaxableIncome, {bold:true}),
+    rowFn('Income tax on employment', empIT.tax, {}),
+    rowFn('Employee NIC (already paid via payroll)', nicPaid, {muted:true}),
+    `<div style="height:1px;background:var(--line);margin:10px 0"></div>`,
+
+    // Sole trader section
+    `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--st);margin-bottom:6px">Sole trader income</div>`,
+    rowFn('Sole trader income', stIncome),
+    rowFn('Less: allowable expenses', -stExpenses, {indent:true,muted:true}),
+    mileageDed > 0 ? rowFn(`Less: mileage deduction`, -mileageDed, {indent:true,muted:true}) : '',
+    rowFn('Sole trader profit', stProfit, {bold:true}),
+    rowFn('Less: remaining personal allowance', -paRemainingForST, {indent:true,muted:true}),
+    rowFn('Taxable sole trader income', stTaxableIncome, {bold:true}),
+    rowFn(`Income tax on sole trader (stacks on employment bands)`, stIT.tax, {}),
+    rowFn('Class 4 NI on sole trader profit', stNI, {}),
+    `<div style="height:1px;background:var(--line);margin:10px 0"></div>`,
+
+    // Final bill
+    `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:6px">Your self-assessment bill</div>`,
+    rowFn('Total income tax due', totalITDue, {bold:true}),
+    rowFn('Less: PAYE tax already paid', -payePaid, {muted:true,good:true}),
+    rowFn('Total Class 4 NI due (via self-assessment)', stNI, {}),
+    `<div style="height:2px;background:var(--ink);margin:12px 0"></div>`,
+    rowFn('STILL TO PAY via Self Assessment', selfAssessmentBill, {sa:true,total:true}),
+  ].join('');
+
+  // Summary stats
+  document.getElementById('combined-tax-stats').innerHTML = [
+    { label:'Total income',          value: fmt(empGross + stIncome),          cls:'' },
+    { label:'Total tax due',         value: fmt(totalITDue + stNI),            cls:'gold' },
+    { label:'Already paid (PAYE)',   value: fmt(payePaid),                     cls:'green' },
+    { label:'Self-assessment bill',  value: fmt(selfAssessmentBill),           cls: selfAssessmentBill > 0 ? 'warn' : 'green' },
+  ].map(s=>`<div class="stat"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
 }
 
 // ════════════════════════════════════════════════════════════════
