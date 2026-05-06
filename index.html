@@ -1911,12 +1911,31 @@ function saveAllocation(){
   const t=S.transactions.find(t=>t.id===allocTxnId);if(!t)return;
   const accounts=S.wealthAccounts||[];
   const isPersonalTransfer=document.getElementById('alloc-personal-transfer')?.checked||false;
+
+  // Work out what was previously allocated to each account so we can reverse it
+  const prevAllocs=S.allocations[allocTxnId]||[];
+  const prevByAccount={};
+  prevAllocs.forEach(a=>{prevByAccount[a.wealthAccountId]=(prevByAccount[a.wealthAccountId]||0)+a.amount;});
+
   const allocs=accounts.map(acc=>{
     const v=parseFloat(document.getElementById(`alloc-${acc.id}`)?.value)||0;
     if(v<=0)return null;
     const isPersonalAcc=acc.scope==='personal'||acc.scope==='joint';
     return{wealthAccountId:acc.id,amount:v,personalTransfer:isPersonalAcc&&isPersonalTransfer};
   }).filter(Boolean);
+
+  // Update account balances: reverse previous allocation, apply new one
+  const newByAccount={};
+  allocs.forEach(a=>{newByAccount[a.wealthAccountId]=(newByAccount[a.wealthAccountId]||0)+a.amount;});
+
+  S.wealthAccounts=accounts.map(acc=>{
+    const prev=prevByAccount[acc.id]||0;
+    const next=newByAccount[acc.id]||0;
+    const diff=next-prev; // positive = adding, negative = removing
+    if(diff===0)return acc;
+    return{...acc, balance: Math.round((acc.balance+diff)*100)/100, updated:todayStr()};
+  });
+
   S.allocations[allocTxnId]=allocs;
   saveState();
   document.getElementById('allocModal').classList.remove('open');
