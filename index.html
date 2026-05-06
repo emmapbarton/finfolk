@@ -1321,7 +1321,7 @@ function renderSTTransactions() {
       <td>${typeBadge(t.type)}</td>
       <td class="text-right" style="font-weight:500;color:${t.type==='income'?'var(--st)':'var(--warn)'}">${t.type==='expense'?'−':'+'}${fmt(t.amount)}</td>
       <td style="font-size:12px">
-        ${t.type==='income'?(fullyAlloc?`<span style="color:var(--accent)">✓ allocated</span>`:`<button class="btn-sm" onclick="openAllocModal('${t.id}')">${am>0?'Update':'Allocate'}</button>`):'—'}
+        ${t.type==='income'?`<button class="btn-sm" onclick="openAllocModal('${t.id}')" style="${fullyAlloc?'color:var(--accent);border-color:#b8d9c3':''}">${fullyAlloc?'✓ Edit':'Allocate'}</button>`:'—'}
       </td>
       <td class="text-right"><button class="btn-sm" onclick="openEdit('${t.id}')" style="margin-right:4px">Edit</button><button class="btn-sm btn-danger" onclick="deleteTxn('${t.id}')">Del</button></td>
     </tr>`;
