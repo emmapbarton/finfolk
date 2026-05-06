@@ -196,7 +196,12 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
 <!-- ── PERSONAL OVERVIEW ── -->
 <div class="page active" id="page-p-overview">
   <div class="page-title"><span class="mode-chip personal">Personal</span>Overview</div>
-  <div class="page-sub" id="p-overview-period">This month</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <button onclick="changeOverviewMonth(-1)" style="background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:18px;cursor:pointer;color:var(--ink-2)">‹</button>
+    <div id="p-overview-period" style="font-size:13px;color:var(--ink-2);min-width:120px;text-align:center"></div>
+    <button onclick="changeOverviewMonth(1)" style="background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:18px;cursor:pointer;color:var(--ink-2)">›</button>
+    <button onclick="resetOverviewMonth()" id="overview-today-btn" style="display:none;font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);color:var(--ink-2);cursor:pointer">Today</button>
+  </div>
   <div id="p-overview-alerts"></div>
   <div class="stat-grid" id="p-overview-stats"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
@@ -880,11 +885,28 @@ function modeBadge(m) { return m==='personal'?`<span class="badge badge-personal
 // ════════════════════════════════════════════════════════════════
 //  PERSONAL OVERVIEW
 // ════════════════════════════════════════════════════════════════
+let overviewMonth = new Date().toISOString().slice(0,7); // 'YYYY-MM'
+
+function changeOverviewMonth(dir) {
+  const [y,m] = overviewMonth.split('-').map(Number);
+  const d = new Date(y, m-1+dir, 1);
+  overviewMonth = d.toISOString().slice(0,7);
+  renderPOverview();
+}
+function resetOverviewMonth() {
+  overviewMonth = new Date().toISOString().slice(0,7);
+  renderPOverview();
+}
+
 function renderPOverview() {
   const now = new Date();
-  const thisMonth = now.toISOString().slice(0,7);
-  document.getElementById('p-overview-period').textContent =
-    now.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  const thisMonth = overviewMonth;
+  const isCurrentMonth = thisMonth === now.toISOString().slice(0,7);
+  const [y,m] = thisMonth.split('-').map(Number);
+  const label = new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  document.getElementById('p-overview-period').textContent = label;
+  const todayBtn = document.getElementById('overview-today-btn');
+  if(todayBtn) todayBtn.style.display = isCurrentMonth ? 'none' : '';
 
   const txns = S.transactions.filter(t=>t.mode==='personal'&&t.date.startsWith(thisMonth));
   const inc  = txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
@@ -895,7 +917,7 @@ function renderPOverview() {
     t.mode==='soletrader'&&t.type==='income'&&t.date.startsWith(thisMonth)&&
     (S.allocations[t.id]||[]).some(a=>a.personalTransfer)
   );
-  const transferAmt = transfers.reduce((s,t)=>{
+    const transferAmt = transfers.reduce((s,t)=>{
     const allocs = (S.allocations[t.id]||[]).filter(a=>a.personalTransfer);
     return s + allocs.reduce((ss,a)=>ss+a.amount,0);
   },0);
