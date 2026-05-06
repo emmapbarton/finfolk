@@ -467,9 +467,18 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
       </div>
       <div style="font-size:12px;color:var(--ink-3);margin-top:10px">These figures are saved per tax year. Update them when you receive your P60 each April.</div>
     </div>
+    <!-- Payments on account -->
+    <div class="card" style="max-width:600px">
+      <div class="section-title">Prior year payments on account</div>
+      <div class="form-row" style="margin:0">
+        <label>Payments on account already made for this tax year (£) <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink-3)">— from last Jan + Jul</span></label>
+        <input type="number" id="emp-prior-poa" min="0" step="1" placeholder="0" oninput="savePOAInput();renderCombinedTax()">
+      </div>
+    </div>
     <!-- Combined computation -->
     <div class="card" style="max-width:600px">
       <div class="section-title">Combined self-assessment calculation</div>
+      <div id="combined-auto-note"></div>
       <div id="combined-tax-rows"></div>
       <div style="font-size:12px;color:var(--ink-3);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">
         Estimate only. Does not include Class 2 NI, student loan, Gift Aid, or prior-year adjustments. Consult an accountant before filing your SA100.
@@ -594,7 +603,7 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
       </div>
     </div>
     <div class="form-grid">
-      <div class="form-row"><label>Amount (£)</label><input type="number" id="qa-amount" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="form-row"><label>Amount — gross (£)</label><input type="number" id="qa-amount" min="0" step="0.01" placeholder="0.00" oninput="updateIncomeNetPreview()"></div>
       <div class="form-row"><label>Date</label><input type="date" id="qa-date"></div>
     </div>
     <div class="form-row"><label>Description</label><input type="text" id="qa-desc" placeholder="e.g. PreQlinic June invoice"></div>
@@ -603,30 +612,17 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
       <select id="qa-cat" onchange="onQACatChange()"></select>
     </div>
     <div id="qa-budget-hint" style="display:none;margin-top:-8px;margin-bottom:12px;font-size:12px;padding:7px 10px;background:var(--surface);border-radius:6px"></div>
-    <!-- Income gross/net section -->
+    <!-- Income fields -->
     <div id="qa-income-section">
-      <div style="background:var(--surface);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:10px">How are you entering this income?</div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="qa-income-mode" value="gross-only" checked onchange="onQAIncomeModeChange()"> I know my gross</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="qa-income-mode" value="gross-and-tax" onchange="onQAIncomeModeChange()"> Gross + exact tax</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="qa-income-mode" value="net-backcalc" onchange="onQAIncomeModeChange()"> Back-calc from net</label>
-        </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Tax withheld (£) <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink-3)">— PAYE or withheld at source</span></label>
+          <input type="number" id="qa-taxwithheld" min="0" step="0.01" placeholder="0.00" oninput="updateIncomeNetPreview()"></div>
+        <div class="form-row"><label>NI deducted (£) <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink-3)">— employee NI</span></label>
+          <input type="number" id="qa-ni-deducted" min="0" step="0.01" placeholder="0.00" oninput="updateIncomeNetPreview()"></div>
       </div>
-      <div id="qa-mode-gross-only"></div>
-      <div id="qa-mode-gross-and-tax" style="display:none">
-        <div class="form-grid">
-          <div class="form-row"><label>Gross (£)</label><input type="number" id="qa-gross-b" min="0" step="0.01" oninput="onQAGrossTaxInput()"></div>
-          <div class="form-row"><label>Tax withheld (£)</label><input type="number" id="qa-taxwithheld" min="0" step="0.01" oninput="onQAGrossTaxInput()"></div>
-        </div>
-        <div id="qa-gt-result" style="display:none;font-size:12px;color:var(--ink-2);margin-bottom:12px;padding:7px 10px;background:var(--surface);border-radius:6px"></div>
-      </div>
-      <div id="qa-mode-net-backcalc" style="display:none">
-        <div class="form-grid">
-          <div class="form-row"><label>Net received (£)</label><input type="number" id="qa-net-c" min="0" step="0.01" oninput="onQANetBackcalcInput()"></div>
-          <div class="form-row"><label>Gross override</label><input type="number" id="qa-gross-override" min="0" step="0.01" placeholder="Optional"></div>
-        </div>
-        <div id="qa-bc-result" style="display:none;font-size:12px;color:var(--ink-2);margin-bottom:12px;padding:7px 10px;background:var(--surface);border-radius:6px"></div>
+      <div id="qa-net-preview" style="display:none;font-size:13px;padding:8px 12px;background:var(--surface);border-radius:var(--r);margin-bottom:12px">
+        Net received: <strong id="qa-net-preview-val" style="color:var(--accent)">—</strong>
+        <span style="color:var(--ink-3);font-size:12px;margin-left:12px">Gross − tax − NI</span>
       </div>
     </div>
     <div class="form-row"><label>Notes (optional)</label><textarea id="qa-notes" rows="2"></textarea></div>
@@ -1190,7 +1186,7 @@ function renderSTOverview() {
   document.getElementById('st-net-position').innerHTML=`
     <div class="net-pos-row"><span>Gross invoiced</span><span style="color:var(--st)">${fmt(income)}</span></div>
     <div class="net-pos-row"><span>Less: business expenses</span><span style="color:var(--warn)">−${fmt(expenses)}</span></div>
-    ${mileageDed>0?`<div class="net-pos-row"><span>Less: mileage deduction</span><span style="color:var(--warn)">−${fmt(mileageDed)}</span></div>`:''}
+    ${mileageDed>0?`<div class="net-pos-row" style="padding-left:16px;font-size:12px;color:var(--ink-2)"><span>— mileage deduction</span><span style="color:var(--warn)">−${fmt(mileageDed)}</span></div>`:''} 
     <div class="net-pos-row"><span>Less: tax reserve (${(rate*100).toFixed(0)}%)</span><span style="color:var(--gold)">−${fmt(taxRes)}</span></div>
     ${withheld>0?`<div class="net-pos-row indent"><span>Tax already withheld</span><span>${fmt(withheld)}</span></div>`:''}
     <div class="net-pos-row total"><span>What's actually yours</span><span style="color:var(--info)">${fmt(netYours)}</span></div>
@@ -1566,135 +1562,166 @@ function saveEmploymentInputs() {
   saveState();
 }
 
+function savePOAInput() {
+  const ty = selectedTY();
+  if (!S.paymentsOnAccount) S.paymentsOnAccount = {};
+  if (!S.paymentsOnAccount[ty]) S.paymentsOnAccount[ty] = {};
+  S.paymentsOnAccount[ty].paid = parseFloat(document.getElementById('emp-prior-poa')?.value) || 0;
+  saveState();
+}
+
 function loadEmploymentInputs() {
   const ty  = selectedTY();
   const emp = (S.employmentIncome || {})[ty] || {};
+  const poa = (S.paymentsOnAccount || {})[ty] || {};
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   set('emp-gross',     emp.grossSalary);
   set('emp-paye-paid', emp.payeTaxPaid);
   set('emp-nic-paid',  emp.employeeNIC);
   set('emp-pension',   emp.pension);
+  set('emp-prior-poa', poa.paid);
 }
 
 // ── Combined tax calculation ───────────────────────────────────
 function renderCombinedTax() {
   const ty   = selectedTY();
-  const emp  = (S.employmentIncome || {})[ty] || {};
-  const txns = S.transactions.filter(t => t.mode === 'soletrader' && inSelectedTY(t.date));
+  const txns = S.transactions.filter(t => inSelectedTY(t.date));
 
-  // Employment figures
-  const empGross   = emp.grossSalary || 0;
-  const payePaid   = emp.payeTaxPaid || 0;
-  const nicPaid    = emp.employeeNIC || 0;
-  const empPension = emp.pension     || 0;
+  // ── Auto-total employment figures from personal income transactions ──
+  const persIncomeTxns = txns.filter(t => t.mode==='personal' && t.type==='income');
+  const autoEmpGross   = persIncomeTxns.reduce((s,t) => s+(t.grossAmount||t.amount), 0);
+  const autoPayePaid   = persIncomeTxns.reduce((s,t) => s+(t.taxWithheld||0), 0);
+  const autoNicPaid    = persIncomeTxns.reduce((s,t) => s+(t.niDeducted||0), 0);
 
-  // Sole trader figures
-  const stIncome   = txns.filter(t => t.type === 'income').reduce((s,t)  => s + t.amount, 0);
-  const stExpenses = txns.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
-  const mileageDed = getMileageDeduction();
-  const stProfit   = stIncome - stExpenses - mileageDed;
+  // Manual overrides from employment inputs (if filled, they take precedence)
+  const empEl    = (S.employmentIncome||{})[ty]||{};
+  const empGross   = parseFloat(document.getElementById('emp-gross')?.value)    || empEl.grossSalary || autoEmpGross;
+  const payePaid   = parseFloat(document.getElementById('emp-paye-paid')?.value)|| empEl.payeTaxPaid || autoPayePaid;
+  const nicPaid    = parseFloat(document.getElementById('emp-nic-paid')?.value) || empEl.employeeNIC || autoNicPaid;
+  const empPension = parseFloat(document.getElementById('emp-pension')?.value)  || empEl.pension     || 0;
 
-  // UK 2024-25 bands
-  const PA    = 12570;
-  const BRL   = 50270;  // basic rate limit (PA + basic band)
-  const HRL   = 125140; // higher rate limit
+  // Show auto-totals note if fields are empty and we have transaction data
+  const autoNote = (!empEl.grossSalary && autoEmpGross > 0)
+    ? `<div style="font-size:12px;color:var(--info);padding:8px 10px;background:var(--info-bg);border-radius:6px;margin-bottom:14px">
+        ℹ Auto-totalled from your personal income transactions: gross ${fmt(autoEmpGross)}, tax ${fmt(autoPayePaid)}, NI ${fmt(autoNicPaid)}.
+        Enter figures below to override.
+       </div>` : '';
+  const autoNoteEl = document.getElementById('combined-auto-note');
+  if(autoNoteEl) autoNoteEl.innerHTML = autoNote;
 
-  // Personal allowance tapering above £100k
-  const totalGross = empGross + Math.max(0, stProfit);
-  const effectivePA = totalGross > 100000
-    ? Math.max(0, PA - Math.floor((totalGross - 100000) / 2))
-    : PA;
+  // ── Student loan ──
+  const slPlan = (S.taxProfile||{}).sl || 'none';
+  const slThresholds = {plan1:24990, plan2:27295, plan4:31395, none:Infinity};
+  const slRate = slPlan==='none'?0:0.09;
+  const slThresh = slThresholds[slPlan]||Infinity;
+  // ST total income for SL calc
+  const stTxns   = txns.filter(t => t.mode==='soletrader');
+  const stIncome  = stTxns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const stExpenses= stTxns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const mileageDed= getMileageDeduction();
+  const stProfit  = stIncome - stExpenses - mileageDed;
+  const totalIncomeForSL = empGross + Math.max(0,stProfit);
+  const slRepayment = Math.max(0, totalIncomeForSL - slThresh) * slRate;
 
-  // How much PA is used by employment income
-  const paUsedByEmp  = Math.min(effectivePA, empGross - empPension);
+  // ── UK 2024-25 bands ──
+  const PA  = 12570;
+  const BRL = 50270;
+  const HRL = 125140;
+
+  // PA tapering above £100k
+  const totalGross  = empGross + Math.max(0,stProfit);
+  const effectivePA = totalGross > 100000 ? Math.max(0, PA - Math.floor((totalGross-100000)/2)) : PA;
+
+  const paUsedByEmp      = Math.min(effectivePA, Math.max(0, empGross - empPension));
   const paRemainingForST = Math.max(0, effectivePA - paUsedByEmp);
-
-  // Taxable employment income (after pension and PA)
   const empTaxableIncome = Math.max(0, empGross - empPension - paUsedByEmp);
+  const stTaxableIncome  = Math.max(0, stProfit - paRemainingForST);
 
-  // ST taxable income — uses remaining PA, then stacks on top of employment bands
-  const stTaxableIncome = Math.max(0, stProfit - paRemainingForST);
-
-  // Income tax on employment (basic / higher / additional)
-  function calcIT(taxable, alreadyUsedBands) {
-    let tax = 0;
-    const basicBand  = BRL - PA;
-    const higherBand = HRL - BRL;
-    const basicLeft  = Math.max(0, basicBand - alreadyUsedBands);
-    const basic      = Math.min(taxable, basicLeft);
-    const higher     = Math.min(Math.max(0, taxable - basic), higherBand);
-    const addl       = Math.max(0, taxable - basic - higher);
-    tax = basic * 0.20 + higher * 0.40 + addl * 0.45;
-    return { tax, basicUsed: basic };
+  function calcIT(taxable, alreadyUsed) {
+    const basicBand = BRL - PA;
+    const higherBand= HRL - BRL;
+    const basicLeft = Math.max(0, basicBand - alreadyUsed);
+    const basic     = Math.min(taxable, basicLeft);
+    const higher    = Math.min(Math.max(0, taxable-basic), higherBand);
+    const addl      = Math.max(0, taxable-basic-higher);
+    return { tax: basic*0.20 + higher*0.40 + addl*0.45, basicUsed: basic };
   }
 
   const empIT = calcIT(empTaxableIncome, 0);
   const stIT  = calcIT(stTaxableIncome, empIT.basicUsed);
 
-  // Class 4 NI on sole trader profit (not employment NIC)
-  const stNIThreshold = 12570;
-  const stNIUpper     = 50270;
-  let stNI = 0;
-  if (stProfit > stNIThreshold) {
-    const mainBand = Math.min(stProfit, stNIUpper) - stNIThreshold;
-    const upper    = Math.max(0, stProfit - stNIUpper);
-    stNI = mainBand * 0.09 + upper * 0.02;
+  // ── Class 2 NI (flat rate for sole traders) ──
+  const class2NI = stProfit > 12570 ? 179.40 : 0; // 2024-25: £3.45/week × 52
+
+  // ── Class 4 NI ──
+  let class4NI = 0;
+  if(stProfit > 12570){
+    const main = Math.min(stProfit,50270) - 12570;
+    const upper= Math.max(0, stProfit-50270);
+    class4NI   = main*0.09 + upper*0.02;
   }
 
-  const totalITDue   = empIT.tax + stIT.tax;
-  const totalNICDue  = nicPaid + stNI; // emp NIC already paid; ST NI still to pay
-  const totalDue     = totalITDue + stNI;
-  const alreadyPaid  = payePaid + nicPaid;
-  const selfAssessmentBill = Math.max(0, totalDue - payePaid);
+  // ── Payments on account ──
+  // Prior year payments on account reduce the Jan bill
+  const priorPOA = (S.paymentsOnAccount||{})[ty-1]?.paid || 0;
 
-  // Render rows
-  const rowFn = (label, value, opts = {}) => `
-    <div class="net-pos-row ${opts.total ? 'total' : ''} ${opts.sep ? 'indent' : ''}"
-      style="${opts.highlight ? 'background:var(--gold-bg);margin:0 -22px;padding:10px 22px;' : ''}${opts.sa ? 'background:var(--warn-bg);margin:0 -22px;padding:12px 22px;border-radius:0;' : ''}${opts.indent ? 'padding-left:20px;' : ''}">
-      <span style="${opts.muted ? 'color:var(--ink-2);' : ''}${opts.total||opts.bold ? 'font-weight:600;' : ''}">${label}</span>
-      <span style="font-weight:${opts.total||opts.bold ? '600' : '400'};color:${opts.sa ? 'var(--warn)' : opts.highlight ? 'var(--gold)' : value < 0 ? 'var(--warn)' : opts.good ? 'var(--accent)' : 'var(--ink)'}">
-        ${value < 0 ? '(' + fmt(Math.abs(value)) + ')' : fmt(value)}
+  const totalITDue  = empIT.tax + stIT.tax;
+  const totalNIDue  = class4NI + class2NI;
+  const totalDue    = totalITDue + totalNIDue + slRepayment;
+  const selfAssessmentBill = Math.max(0, totalDue - payePaid - priorPOA);
+  // Payments on account for next year (half the current SA bill, due Jan + Jul)
+  const nextPOA = selfAssessmentBill / 2;
+
+  const rowFn = (label, value, opts={}) => `
+    <div class="net-pos-row ${opts.total?'total':''}"
+      style="${opts.highlight?'background:var(--gold-bg);margin:0 -22px;padding:10px 22px;':''}${opts.sa?'background:var(--warn-bg);margin:0 -22px;padding:12px 22px;':''}${opts.indent?'padding-left:20px;':''}">
+      <span style="${opts.muted?'color:var(--ink-2);':''}${opts.total||opts.bold?'font-weight:600;':''}">${label}</span>
+      <span style="font-weight:${opts.total||opts.bold?'600':'400'};color:${opts.sa?'var(--warn)':opts.highlight?'var(--gold)':value<0?'var(--warn)':opts.good?'var(--accent)':'var(--ink)'}">
+        ${value<0?'('+fmt(Math.abs(value))+')':fmt(value)}
       </span>
     </div>`;
 
   document.getElementById('combined-tax-rows').innerHTML = [
-    // Employment section
     `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--personal);margin-bottom:6px;margin-top:4px">Employment income</div>`,
     rowFn('Gross salary', empGross),
-    empPension > 0 ? rowFn('Less: pension contributions', -empPension, {indent:true,muted:true}) : '',
+    empPension>0 ? rowFn('Less: pension contributions', -empPension, {indent:true,muted:true}) : '',
     rowFn('Less: personal allowance used', -paUsedByEmp, {indent:true,muted:true}),
     rowFn('Taxable employment income', empTaxableIncome, {bold:true}),
-    rowFn('Income tax on employment', empIT.tax, {}),
-    rowFn('Employee NIC (already paid via payroll)', nicPaid, {muted:true}),
+    rowFn('Income tax on employment', empIT.tax),
+    rowFn('Employee NIC (paid via payroll)', nicPaid, {muted:true}),
     `<div style="height:1px;background:var(--line);margin:10px 0"></div>`,
 
-    // Sole trader section
     `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--st);margin-bottom:6px">Sole trader income</div>`,
     rowFn('Sole trader income', stIncome),
     rowFn('Less: allowable expenses', -stExpenses, {indent:true,muted:true}),
-    mileageDed > 0 ? rowFn(`Less: mileage deduction`, -mileageDed, {indent:true,muted:true}) : '',
+    mileageDed>0 ? rowFn('Less: mileage deduction', -mileageDed, {indent:true,muted:true}) : '',
     rowFn('Sole trader profit', stProfit, {bold:true}),
     rowFn('Less: remaining personal allowance', -paRemainingForST, {indent:true,muted:true}),
     rowFn('Taxable sole trader income', stTaxableIncome, {bold:true}),
-    rowFn(`Income tax on sole trader (stacks on employment bands)`, stIT.tax, {}),
-    rowFn('Class 4 NI on sole trader profit', stNI, {}),
+    rowFn('Income tax on sole trader profit', stIT.tax),
+    rowFn('Class 4 NI (9% on profit)', class4NI),
+    rowFn('Class 2 NI (flat rate)', class2NI),
+    slRepayment>0 ? rowFn(`Student loan repayment (${slPlan.toUpperCase()})`, slRepayment) : '',
     `<div style="height:1px;background:var(--line);margin:10px 0"></div>`,
 
-    // Final bill
-    `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:6px">Your self-assessment bill</div>`,
+    `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:6px">Self-assessment bill</div>`,
     rowFn('Total income tax due', totalITDue, {bold:true}),
-    rowFn('Less: PAYE tax already paid', -payePaid, {muted:true,good:true}),
-    rowFn('Total Class 4 NI due (via self-assessment)', stNI, {}),
+    rowFn('Less: PAYE already paid', -payePaid, {muted:true,good:true}),
+    rowFn('Class 4 + Class 2 NI due', totalNIDue),
+    slRepayment>0 ? rowFn('Student loan via SA', slRepayment) : '',
+    priorPOA>0 ? rowFn('Less: payments on account already made', -priorPOA, {muted:true,good:true}) : '',
     `<div style="height:2px;background:var(--ink);margin:12px 0"></div>`,
     rowFn('STILL TO PAY via Self Assessment', selfAssessmentBill, {sa:true,total:true}),
+    nextPOA>0 ? `<div style="font-size:12px;color:var(--ink-2);margin-top:10px;padding:8px 10px;background:var(--surface);border-radius:6px">
+      📅 Payments on account for next year: <strong>${fmt(nextPOA)}</strong> due 31 Jan + <strong>${fmt(nextPOA)}</strong> due 31 Jul
+    </div>` : '',
   ].join('');
 
-  // Summary stats
   document.getElementById('combined-tax-stats').innerHTML = [
-    { label:'Total income',          value: fmt(empGross + stIncome),          cls:'' },
-    { label:'Total tax due',         value: fmt(totalITDue + stNI),            cls:'gold' },
-    { label:'Already paid (PAYE)',   value: fmt(payePaid),                     cls:'green' },
-    { label:'Self-assessment bill',  value: fmt(selfAssessmentBill),           cls: selfAssessmentBill > 0 ? 'warn' : 'green' },
+    {label:'Total income',         value:fmt(empGross+stIncome),         cls:''},
+    {label:'Total tax + NI due',   value:fmt(totalITDue+totalNIDue),     cls:'gold'},
+    {label:'Already paid (PAYE)',  value:fmt(payePaid),                   cls:'green'},
+    {label:'Self-assessment bill', value:fmt(selfAssessmentBill),         cls:selfAssessmentBill>0?'warn':'green'},
   ].map(s=>`<div class="stat"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
 }
 
@@ -1981,71 +2008,33 @@ function updateQABudgetHint(){
   hint.style.display='';hint.innerHTML=`<span style="color:${colour}">${meta.period==='monthly'?'This month':'This year'}: ${fmt(spend)} of ${fmt(limit)} used (${Math.round(pct)}%)</span>`;
 }
 
-function onQAIncomeModeChange(){
-  const mode=document.querySelector('input[name="qa-income-mode"]:checked')?.value||'gross-only';
-  document.getElementById('qa-mode-gross-only').style.display=mode==='gross-only'?'':'none';
-  document.getElementById('qa-mode-gross-and-tax').style.display=mode==='gross-and-tax'?'':'none';
-  document.getElementById('qa-mode-net-backcalc').style.display=mode==='net-backcalc'?'':'none';
-}
 
-function onQAGrossTaxInput(){
-  const gross=parseFloat(document.getElementById('qa-gross-b').value)||0;const tax=parseFloat(document.getElementById('qa-taxwithheld').value)||0;
-  const res=document.getElementById('qa-gt-result');if(!gross){res.style.display='none';return;}
-  res.style.display='';res.textContent=`Net to bank: ${fmt(gross-tax)} · Effective rate: ${gross>0?(tax/gross*100).toFixed(1):'0'}%`;
-}
 
-function deductionsFromGross(gross,sl,pensionPc){
-  const PA=12570,BRL=50270;const pension=gross*pensionPc;const tg=gross-pension;
-  let tax=0;const pa=tg>100000?Math.max(0,PA-(tg-100000)/2):PA;const taxable=Math.max(0,tg-pa);
-  if(taxable>0){const basic=Math.min(taxable,BRL-PA);const higher=Math.max(0,taxable-basic);tax=basic*0.20+higher*0.40;}
-  let ni=0;if(gross>PA){const mb=Math.min(gross,BRL)-PA;const ub=Math.max(0,gross-BRL);ni=mb*0.08+ub*0.02;}
-  const slCfg={plan1:{t:24990},plan2:{t:27295},plan4:{t:31395},none:{t:Infinity}}[sl]||{t:Infinity};
-  const slAmt=Math.max(0,gross-slCfg.t)*0.09;
-  return{tax,ni,sl:slAmt,pension};
-}
-
-function onQANetBackcalcInput(){
-  const net=parseFloat(document.getElementById('qa-net-c').value)||0;const res=document.getElementById('qa-bc-result');
-  if(!net){res.style.display='none';return;}
-  let gross=net;for(let i=0;i<60;i++){const{tax,ni,sl,pension}=deductionsFromGross(gross,'none',0);const diff=net-(gross-tax-ni-sl-pension);if(Math.abs(diff)<0.01)break;gross+=diff*0.95;if(gross<0){gross=0;break;}}
-  const{tax,ni}=deductionsFromGross(gross,'none',0);
-  res.style.display='';res.innerHTML=`Est. gross: <strong style="color:var(--accent)">${fmt(gross)}</strong> · Tax: <strong style="color:var(--warn)">${fmt(tax)}</strong> · NI: <strong style="color:var(--warn)">${fmt(ni)}</strong>`;
-  window._qaBcGross=gross;window._qaBcTax=tax;window._qaBcNi=ni;
-}
 
 function saveQuickEntry(){
-  const date=document.getElementById('qa-date').value;const desc=document.getElementById('qa-desc').value.trim();
-  const cat=document.getElementById('qa-cat').value;const notes=document.getElementById('qa-notes').value.trim();
+  const date=document.getElementById('qa-date').value;
+  const desc=document.getElementById('qa-desc').value.trim();
+  const cat=document.getElementById('qa-cat').value;
+  const notes=document.getElementById('qa-notes').value.trim();
   const rawAmt=parseFloat(document.getElementById('qa-amount').value);
   const mode=document.querySelector('input[name="qa-mode"]:checked')?.value||'soletrader';
   if(!date||!desc){showQAFeedback('Please fill in date and description.','warn');return;}
 
-  let amount,entryNotes=notes,grossAmount,taxWithheld,netAmount;
-
   if(qaType==='expense'){
     if(!rawAmt){showQAFeedback('Please enter an amount.','warn');return;}
-    amount=rawAmt;
-    S.transactions.push({id:uid(),date,amount,description:desc,category:cat,type:'expense',mode,notes});
+    S.transactions.push({id:uid(),date,amount:rawAmt,description:desc,category:cat,type:'expense',mode,notes});
   } else {
-    const imode=document.querySelector('input[name="qa-income-mode"]:checked')?.value||'gross-only';
-    if(imode==='gross-only'){
-      grossAmount=rawAmt;if(!grossAmount){showQAFeedback('Please enter an amount.','warn');return;}
-      amount=grossAmount;const rate=parseFloat(document.getElementById('taxRateSelect')?.value)||0.28;
-      entryNotes=notes+(notes?'\n':'')+`Gross entry. Tax reserve ~${(rate*100).toFixed(0)}% via tax summary.`;taxWithheld=0;
-    } else if(imode==='gross-and-tax'){
-      grossAmount=parseFloat(document.getElementById('qa-gross-b').value);taxWithheld=parseFloat(document.getElementById('qa-taxwithheld').value)||0;
-      if(!grossAmount){showQAFeedback('Please enter a gross amount.','warn');return;}
-      netAmount=grossAmount-taxWithheld;amount=grossAmount;
-      entryNotes=notes+(notes?'\n':'')+`Gross: ${fmt(grossAmount)} · Tax withheld: ${fmt(taxWithheld)} · Net: ${fmt(netAmount)}`;
-    } else {
-      const netVal=parseFloat(document.getElementById('qa-net-c').value);if(!netVal){showQAFeedback('Please enter net amount.','warn');return;}
-      const ov=parseFloat(document.getElementById('qa-gross-override').value);
-      grossAmount=ov||window._qaBcGross||netVal;taxWithheld=window._qaBcTax||0;netAmount=netVal;amount=grossAmount;
-      entryNotes=notes+(notes?'\n':'')+`Net: ${fmt(netVal)} · Est. gross: ${fmt(grossAmount)} · Est. tax: ${fmt(taxWithheld)}`;
-    }
+    const grossAmount=rawAmt;
+    if(!grossAmount){showQAFeedback('Please enter a gross amount.','warn');return;}
+    const taxWithheld=parseFloat(document.getElementById('qa-taxwithheld').value)||0;
+    const niDeducted=parseFloat(document.getElementById('qa-ni-deducted').value)||0;
+    const netAmount=grossAmount-taxWithheld-niDeducted;
     const txnId=uid();
-    S.transactions.push({id:txnId,date,amount,description:desc,category:cat,type:'income',mode,notes:entryNotes,grossAmount:grossAmount||amount,taxWithheld:taxWithheld||0,netAmount:netAmount||amount});
-    // Prompt allocation for sole trader income
+    S.transactions.push({
+      id:txnId,date,amount:grossAmount,description:desc,category:cat,
+      type:'income',mode,notes,
+      grossAmount,taxWithheld,niDeducted,netAmount
+    });
     if(mode==='soletrader'){
       saveState();toggleQuickAdd();
       setTimeout(()=>openAllocModal(txnId),300);
@@ -2053,13 +2042,25 @@ function saveQuickEntry(){
     }
   }
   saveState();
-  ['qa-amount','qa-gross-b','qa-taxwithheld','qa-net-c','qa-gross-override'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('qa-desc').value='';document.getElementById('qa-notes').value='';
-  document.getElementById('qa-gt-result').style.display='none';document.getElementById('qa-bc-result').style.display='none';
-  window._qaBcGross=window._qaBcTax=window._qaBcNi=0;
+  ['qa-amount','qa-taxwithheld','qa-ni-deducted'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('qa-desc').value='';
+  document.getElementById('qa-notes').value='';
+  document.getElementById('qa-net-preview').style.display='none';
   showQAFeedback('Saved ✓','accent');
   renderAll();
 }
+function updateIncomeNetPreview(){
+  const gross=parseFloat(document.getElementById('qa-amount').value)||0;
+  const tax=parseFloat(document.getElementById('qa-taxwithheld').value)||0;
+  const ni=parseFloat(document.getElementById('qa-ni-deducted').value)||0;
+  const preview=document.getElementById('qa-net-preview');
+  const val=document.getElementById('qa-net-preview-val');
+  if(!gross){if(preview)preview.style.display='none';return;}
+  const net=gross-tax-ni;
+  if(preview)preview.style.display='';
+  if(val)val.textContent=fmt(net);
+}
+
 function showQAFeedback(msg,tone){const el=document.getElementById('qa-feedback');el.textContent=msg;el.style.color=tone==='warn'?'var(--warn)':'var(--accent)';if(tone!=='warn')setTimeout(()=>el.textContent='',2500);}
 
 // ════════════════════════════════════════════════════════════════
