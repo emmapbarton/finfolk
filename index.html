@@ -1935,7 +1935,9 @@ function saveAllocation(){
     if(diff===0)return acc;
     return{...acc, balance: Math.round((acc.balance+diff)*100)/100, updated:todayStr()};
   });
-
+  console.log('allocTxnId:', allocTxnId);
+  console.log('allocs being saved:', allocs);
+  console.log('inputs found:', accounts.map(acc=>({id:acc.id, el:!!document.getElementById(`alloc-${acc.id}`), val:document.getElementById(`alloc-${acc.id}`)?.value})));
   S.allocations[allocTxnId]=allocs;
   saveState();
   document.getElementById('allocModal').classList.remove('open');
