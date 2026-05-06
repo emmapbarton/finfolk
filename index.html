@@ -594,24 +594,24 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
     <div id="p-income-cats"></div>
     <div class="flex-row mt8"><input type="text" id="new-p-income-cat" placeholder="New category…" style="flex:1"><button onclick="addCategory('p-income')" class="btn-sm">Add</button></div>
   </div>
-  <div class="card" style="max-width:520px">
-    <div class="section-title">Personal expense categories</div>
-    <div id="p-expense-cats"></div>
-    <div class="flex-row mt8"><input type="text" id="new-p-expense-cat" placeholder="New category…" style="flex:1"><button onclick="addCategory('p-expense')" class="btn-sm">Add</button></div>
-  </div>
-  <div class="card" style="max-width:760px">
-    <div class="section-title">Sole trader expense categories <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--ink-2)">Type · Limit · Period · Bucket</span></div>
-    <div style="display:grid;grid-template-columns:1fr 80px 90px 75px 90px 50px;gap:6px;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)">
-      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Category</span>
-      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Type</span>
-      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Limit (£)</span>
-      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Period</span>
-      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Bucket</span>
-      <span></span>
-    </div>
-    <div id="st-expense-cats"></div>
-    <div class="flex-row mt8"><input type="text" id="new-st-expense-cat" placeholder="New sole trader expense category…" style="flex:1"><button onclick="addCategory('st-expense')" class="btn-sm">Add</button></div>
-  </div>
+  <div class="card" style="max-width:680px">
+        <div class="section-title">Personal expense categories <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--ink-2)">Limit · Period · Bucket</span></div>
+        <div style="display:grid;grid-template-columns:1fr 90px 75px 90px 50px;gap:6px;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)">
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Category</span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Limit (£)</span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Period</span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)">Bucket</span>
+          <span></span>
+        </div>
+        <div id="p-expense-cats"></div>
+        <div class="flex-row mt8"><input type="text" id="new-p-expense-cat" placeholder="New personal expense category…" style="flex:1"><button onclick="addCategory('p-expense')" class="btn-sm">Add</button></div>
+      </div>
+
+      <div class="card" style="max-width:520px">
+        <div class="section-title">Sole trader expense categories</div>
+        <div id="st-expense-cats"></div>
+        <div class="flex-row mt8"><input type="text" id="new-st-expense-cat" placeholder="New sole trader expense category…" style="flex:1"><button onclick="addCategory('st-expense')" class="btn-sm">Add</button></div>
+      </div>
   <div class="card" style="max-width:520px">
     <div class="section-title">Sole trader income categories</div>
     <div id="st-income-cats"></div>
@@ -2140,25 +2140,24 @@ function stCatOptions(selected,type){
 // ════════════════════════════════════════════════════════════════
 function renderSettings(){
   renderSimpleCatList('p-income-cats',S.pIncomeCategories,'p-income');
-  renderSimpleCatList('p-expense-cats',S.pExpenseCategories,'p-expense');
+  renderPExpenseCats();
   renderSimpleCatList('st-income-cats',S.stIncomeCategories,'st-income');
-  renderSTExpenseCats();
+  renderSimpleCatList('st-expense-cats',S.stExpenseCategories,'st-expense');
 }
 function renderSimpleCatList(elId,cats,type){
   document.getElementById(elId).innerHTML=cats.map((c,i)=>`<div class="flex-row" style="margin-bottom:6px"><span style="flex:1;font-size:13px">${escH(c)}</span><button class="btn-sm btn-danger" onclick="removeCategory('${type}',${i})">Remove</button></div>`).join('');
 }
-function renderSTExpenseCats(){
-  const cats=S.stExpenseCategories;
-  document.getElementById('st-expense-cats').innerHTML=cats.map((c,i)=>{
-    const m=(S.categoryMeta||{})[c]||{kind:'business',limit:'',period:'monthly',bucket:'unassigned'};
+function renderPExpenseCats(){
+  const cats=S.pExpenseCategories;
+  document.getElementById('p-expense-cats').innerHTML=cats.map((c,i)=>{
+    const m=(S.categoryMeta||{})[c]||{limit:'',period:'monthly',bucket:'unassigned'};
     const bucket=(S.budgetSettings?.buckets||{})[c]||m.bucket||'unassigned';
-    return`<div style="display:grid;grid-template-columns:1fr 80px 90px 75px 90px 50px;gap:6px;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)">
+    return`<div style="display:grid;grid-template-columns:1fr 90px 75px 90px 50px;gap:6px;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)">
       <span style="font-size:13px;font-weight:500">${escH(c)}</span>
-      <select class="inline-select" onchange="saveCatMeta('${escH(c)}','kind',this.value)"><option value="business" ${m.kind==='business'?'selected':''}>Business</option><option value="personal" ${m.kind==='personal'?'selected':''}>Personal</option></select>
       <input type="number" min="0" step="1" placeholder="No limit" value="${m.limit||''}" onchange="saveCatMeta('${escH(c)}','limit',this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;width:100%">
       <select class="inline-select" onchange="saveCatMeta('${escH(c)}','period',this.value)"><option value="monthly" ${m.period==='monthly'?'selected':''}>Monthly</option><option value="annual" ${m.period==='annual'?'selected':''}>Annual</option></select>
       <select class="inline-select" onchange="saveCatMeta('${escH(c)}','bucket',this.value)"><option value="unassigned" ${bucket==='unassigned'?'selected':''}>— None</option><option value="needs" ${bucket==='needs'?'selected':''}>🏠 Needs</option><option value="wants" ${bucket==='wants'?'selected':''}>🎉 Wants</option><option value="savings" ${bucket==='savings'?'selected':''}>💰 Saves</option></select>
-      <button class="btn-sm btn-danger" onclick="removeCategory('st-expense',${i})">Del</button>
+      <button class="btn-sm btn-danger" onclick="removeCategory('p-expense',${i})">Del</button>
     </div>`;
   }).join('');
 }
