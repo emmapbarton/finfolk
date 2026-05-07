@@ -2064,7 +2064,7 @@ function populateEditCat(mode,type,selected){
   else cats=type==='income'?S.stIncomeCategories:S.stExpenseCategories;
   document.getElementById('edit-cat').innerHTML=cats.map(c=>`<option value="${escH(c)}" ${c===selected?'selected':''}>${escH(c)}</option>`).join('');
 }
-document.getElementById('edit-type').onchange=function(){const t=S.transactions.find(t=>t.id===editId);if(t)populateEditCat(t.mode,this.value,'');};
+const editTypeEl=document.getElementById('edit-type');if(editTypeEl)editTypeEl.onchange=function(){const t=S.transactions.find(t=>t.id===editId);if(t)populateEditCat(t.mode,this.value,'');};
 function saveEdit(){
   const t=S.transactions.find(t=>t.id===editId);if(!t)return;
   t.date=document.getElementById('edit-date').value;t.description=document.getElementById('edit-desc').value.trim();
@@ -2073,7 +2073,7 @@ function saveEdit(){
   saveState();closeEditModal();renderAll();
 }
 function closeEditModal(){document.getElementById('editModal').classList.remove('open');editId=null;}
-document.getElementById('editModal').addEventListener('click',e=>{if(e.target===document.getElementById('editModal'))closeEditModal();});
+const editModalEl=document.getElementById('editModal');if(editModalEl)editModalEl.addEventListener('click',e=>{if(e.target===editModalEl)closeEditModal();});
 
 function deleteTxn(id){if(!confirm('Delete this transaction?'))return;S.transactions=S.transactions.filter(t=>t.id!==id);delete S.allocations[id];saveState();renderAll();}
 function quickReCat(id,cat){const t=S.transactions.find(t=>t.id===id);if(t){t.category=cat;saveState();}}
@@ -2260,7 +2260,7 @@ function renderAll(){
 //  INIT
 // ════════════════════════════════════════════════════════════════
 buildTaxYearSelect();
-document.getElementById('taxRateSelect').onchange=()=>{renderSTTax();renderSTOverview();};
+const taxRateEl=document.getElementById('taxRateSelect');if(taxRateEl)taxRateEl.onchange=()=>{renderSTTax();renderSTOverview();};
 renderPOverview();
 renderChecklist();
 
