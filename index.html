@@ -6,156 +6,7 @@
 <title>Finfolk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-/* ── TOKENS ── */
-:root {
-  --ink:        #1a1916; --ink-2: #6b6a66; --ink-3: #a8a7a3;
-  --paper:      #faf9f7; --surface: #f2f1ee; --line:  #e4e3df;
-  --accent:     #c7622b; --accent-bg: #fdf0e8;
-  --warn:       #8b3a1a; --warn-bg:   #fdf0eb;
-  --info:       #1a3d6b; --info-bg:   #edf1f9;
-  --gold:       #7a5c1e; --gold-bg:   #fdf6e7;
-  --personal:   #3b5fa0; --personal-bg: #eef2fb;
-  --st:         #c7622b; --st-bg:     #fdf0e8;
-  --r: 10px; --rlg: 16px;
-  --fh: 'Instrument Serif', Georgia, serif;
-  --fb: 'Figtree', system-ui, sans-serif;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);font-size:14px;color:var(--ink);background:var(--paper);min-height:100vh;line-height:1.6}
-
-/* ── LAYOUT ── */
-.shell{display:flex;min-height:100vh}
-nav{width:220px;flex-shrink:0;background:#2a1408;display:flex;flex-direction:column;padding:0 0 24px;position:sticky;top:0;height:100vh;overflow-y:auto}
-main{flex:1;padding:36px 44px;min-width:0;overflow-x:hidden;position:relative}
-
-/* ── NAV ── */
-.nav-brand{padding:24px 24px 20px;border-bottom:1px solid rgba(255,255,255,0.1)}
-.nav-brand h1{font-family:var(--fh);font-size:22px;font-weight:400;font-style:italic;color:#fff}
-.nav-brand small{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:.06em;text-transform:uppercase}
-.nav-section{padding:16px 24px 6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.3)}
-.nav-section.personal{color:rgba(120,160,255,0.7)}
-.nav-section.st{color:rgba(220,140,90,0.7)}
-.nav-btn{display:flex;align-items:center;gap:10px;padding:8px 24px;color:rgba(255,255,255,0.5);cursor:pointer;border:none;background:none;width:100%;text-align:left;font-family:var(--fb);font-size:13px;font-weight:400;border-left:2px solid transparent;transition:all .15s}
-.nav-btn:hover{color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.05)}
-.nav-btn.active{color:#fff;font-weight:500;background:rgba(255,255,255,0.07);border-left-color:#fff}
-.nav-btn.active.personal-mode{border-left-color:#7ea8f0}
-.nav-btn.active.st-mode{border-left-color:#e8925a}
-.nav-btn .icon{font-size:14px;width:18px;text-align:center}
-.nav-divider{height:1px;background:rgba(255,255,255,0.08);margin:12px 0}
-
-/* ── PAGES ── */
-.page{display:none}.page.active{display:block}
-.page-title{font-family:var(--fh);font-size:28px;font-weight:400;margin-bottom:4px}
-.page-sub{font-size:13px;color:var(--ink-2);margin-bottom:24px}
-.mode-chip{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin-right:8px;vertical-align:middle}
-.mode-chip.personal{background:var(--personal-bg);color:var(--personal)}
-.mode-chip.st{background:var(--st-bg);color:var(--st)}
-
-/* ── CARDS ── */
-.card{background:#fff;border:1px solid var(--line);border-radius:var(--rlg);padding:20px 22px;margin-bottom:16px}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-.stat{background:var(--surface);border-radius:var(--r);padding:14px 16px}
-.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:6px}
-.stat-value{font-size:22px;font-weight:300}
-.green{color:var(--accent)}.red{color:var(--warn)}.blue{color:var(--info)}.gold{color:var(--gold)}.personal-c{color:var(--personal)}.st-c{color:var(--st)}
-.section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-
-/* ── BUTTONS ── */
-button{font-family:var(--fb);cursor:pointer;border-radius:var(--r);border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;padding:7px 14px;transition:background .15s,border-color .15s}
-button:hover{background:var(--surface)}
-.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}.btn-primary:hover{background:#333}
-.btn-sm{font-size:12px;padding:4px 10px;border-radius:6px}
-.btn-danger{color:var(--warn);border-color:#f4c5b0}.btn-danger:hover{background:var(--warn-bg)}
-.btn-success{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-success:hover{background:#a34e22}
-.btn-personal{background:var(--personal);color:#fff;border-color:var(--personal)}
-.btn-st{background:var(--st);color:#fff;border-color:var(--st)}
-
-/* ── FORMS ── */
-.form-row{margin-bottom:14px}
-.form-row label{display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
-input[type=text],input[type=number],input[type=date],input[type=month],select,textarea{width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--fb);font-size:13px;color:var(--ink);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--ink-3);box-shadow:0 0 0 3px rgba(26,25,22,.06)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* ── TABLE ── */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);border-bottom:1px solid var(--line)}
-td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface)}
-.text-right{text-align:right}
-
-/* ── BADGES ── */
-.badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap}
-.badge-green{background:var(--accent-bg);color:var(--accent)}
-.badge-red{background:var(--warn-bg);color:var(--warn)}
-.badge-blue{background:var(--info-bg);color:var(--info)}
-.badge-gold{background:var(--gold-bg);color:var(--gold)}
-.badge-gray{background:var(--surface);color:var(--ink-2)}
-.badge-personal{background:var(--personal-bg);color:var(--personal)}
-.badge-st{background:var(--st-bg);color:var(--st)}
-
-/* ── MODALS ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:var(--rlg);padding:28px;width:min(540px,94vw);max-height:88vh;overflow-y:auto;position:relative;box-shadow:0 8px 32px rgba(0,0,0,.15)}
-.modal-title{font-family:var(--fh);font-size:20px;font-weight:400;margin-bottom:20px}
-.modal-close{position:absolute;top:20px;right:20px;background:none;border:none;font-size:20px;color:var(--ink-2);cursor:pointer;padding:0}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
-
-/* ── BOTTOM SHEET ── */
-.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center}
-.sheet-overlay.open{display:flex}
-.sheet{background:#fff;border-radius:20px 20px 0 0;padding:24px 28px 32px;width:min(600px,100vw);max-height:90vh;overflow-y:auto;animation:slideUp .22s ease}
-@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
-.sheet-title{font-family:var(--fh);font-size:22px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
-
-/* ── FAB ── */
-.fab{position:fixed;bottom:32px;right:40px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(199,98,43,.4);border:none;z-index:100;transition:transform .15s,background .15s}
-.fab:hover{transform:scale(1.08)}
-.fab.open{background:#555;transform:rotate(45deg)}
-
-/* ── BARS ── */
-.bar-track{flex:1;background:var(--surface);border-radius:4px;height:8px;overflow:hidden}
-.bar-fill{height:100%;border-radius:4px;transition:width .4s}
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.bar-label{width:120px;font-size:12px;color:var(--ink-2);flex-shrink:0}
-.bar-amt{width:80px;text-align:right;font-size:12px;font-weight:500;flex-shrink:0}
-.budget-bar-fill{height:100%;border-radius:4px;transition:width .4s}
-.budget-bar-fill.ok{background:var(--accent)}.budget-bar-fill.warn{background:#c47c1a}.budget-bar-fill.over{background:var(--warn)}
-
-/* ── MISC ── */
-.flex-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.spacer{flex:1}
-.text-muted{color:var(--ink-2)}
-.mt8{margin-top:8px}
-hr{border:none;border-top:1px solid var(--line);margin:20px 0}
-.empty{text-align:center;padding:36px 20px;color:var(--ink-2)}
-.empty .icon{font-size:32px;display:block;margin-bottom:10px}
-.inline-select{font-size:12px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink);font-family:var(--fb);cursor:pointer}
-.alert{border-radius:var(--r);padding:12px 14px;font-size:13px;margin-bottom:14px}
-.alert-info{background:var(--info-bg);color:var(--info);border:1px solid #b8cde8}
-.alert-warn{background:var(--warn-bg);color:var(--warn);border:1px solid #f0c4ae}
-.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px}
-.filter-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-.type-toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
-.type-btn{flex:1;border:none;border-radius:0;padding:9px;font-size:13px;font-family:var(--fb);cursor:pointer;background:#fff;color:var(--ink-2);transition:background .15s,color .15s}
-.type-btn.active{background:var(--ink);color:#fff;font-weight:500}
-
-/* ── ALLOCATION PANEL ── */
-.alloc-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.alloc-row label{flex:1;font-size:13px;font-weight:500}
-.alloc-row input{width:100px;text-align:right}
-.alloc-remaining{font-size:13px;font-weight:500;padding:8px 0}
-
-/* ── NET POSITION ── */
-.net-pos-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
-.net-pos-row.total{font-weight:600;font-size:15px;border-bottom:none;padding-top:14px}
-.net-pos-row.indent{padding-left:16px;color:var(--ink-2);font-size:12px}
-</style>
+<link rel="stylesheet" href="finfolk.css">
 </head>
 <body>
 <div class="shell">
@@ -433,7 +284,8 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
     <div class="card" style="max-width:560px">
       <div class="section-title">Sole trader computation</div>
       <div id="st-tax-rows"></div>
-      <div style="font-size:12px;color:var(--ink-3);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">This view calculates your sole trader tax in isolation. Use the Combined tab for your real self-assessment figure.</div>
+      <div style="font-size:12px;color:var(--ink-2);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">This view calculates sole trader tax in isolation. Use the <strong>Combined tab</strong> for your real self-assessment figure including employment income.</div>
+      <div style="font-size:12px;color:var(--warn);margin-top:10px;padding:10px 12px;background:var(--warn-bg);border-radius:8px;border:1px solid #f0c4ae">⚠ Estimate only. Not financial, tax, or legal advice. Consult an accountant before filing.</div>
     </div>
   </div>
 
@@ -475,8 +327,8 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
       <div class="section-title">Combined self-assessment calculation</div>
       <div id="combined-auto-note"></div>
       <div id="combined-tax-rows"></div>
-      <div style="font-size:12px;color:var(--ink-3);margin-top:12px;padding:10px;background:var(--surface);border-radius:8px">
-        Estimate only. Does not include Class 2 NI, student loan, Gift Aid, or prior-year adjustments. Consult an accountant before filing your SA100.
+      <div style="font-size:12px;color:var(--warn);margin-top:12px;padding:10px 12px;background:var(--warn-bg);border-radius:8px;border:1px solid #f0c4ae">
+        ⚠ Estimate only. Not financial, tax, or legal advice. Figures are based on HMRC rates for the selected tax year. Consult an accountant before filing your SA100.
       </div>
     </div>
     <div class="stat-grid" id="combined-tax-stats" style="max-width:600px"></div>
@@ -735,6 +587,58 @@ hr{border:none;border-top:1px solid var(--line);margin:20px 0}
 </div>
 
 <script>
+
+// ════════════════════════════════════════════════════════════════
+//  TAX CONFIG — update each April with new HMRC figures
+// ════════════════════════════════════════════════════════════════
+const TAX_CONFIG = {
+  2024: {
+    personalAllowance:   12570,
+    basicRateLimit:      50270,
+    higherRateLimit:     125140,
+    basicRate:           0.20,
+    higherRate:          0.40,
+    additionalRate:      0.45,
+    class4NIMain:        0.09,
+    class4NIUpper:       0.02,
+    class4NIThreshold:   12570,
+    class4NIUpperLimit:  50270,
+    class2NIAnnual:      179.40,
+    mileageRateFirst:    0.45,
+    mileageRateAfter:    0.25,
+    mileageThreshold:    10000,
+    slPlan1Threshold:    24990,
+    slPlan2Threshold:    27295,
+    slPlan4Threshold:    31395,
+    slRate:              0.09,
+  },
+  2025: {
+    personalAllowance:   12570,
+    basicRateLimit:      50270,
+    higherRateLimit:     125140,
+    basicRate:           0.20,
+    higherRate:          0.40,
+    additionalRate:      0.45,
+    class4NIMain:        0.09,
+    class4NIUpper:       0.02,
+    class4NIThreshold:   12570,
+    class4NIUpperLimit:  50270,
+    class2NIAnnual:      192.00,
+    mileageRateFirst:    0.45,
+    mileageRateAfter:    0.25,
+    mileageThreshold:    10000,
+    slPlan1Threshold:    26065,
+    slPlan2Threshold:    28470,
+    slPlan4Threshold:    32745,
+    slRate:              0.09,
+  },
+};
+
+function getTaxConfig() {
+  const ty = selectedTY();
+  return TAX_CONFIG[ty] || TAX_CONFIG[2024];
+}
+
 // ════════════════════════════════════════════════════════════════
 //  CONFIG — edit freely
 // ════════════════════════════════════════════════════════════════
@@ -744,6 +648,57 @@ const DEFAULTS = {
   stIncomeCategories: ['PreQlinic','Dog Sitting','Other ST Income'],
   stExpenseCategories:['Equipment','Software','Travel','Mileage','Home Office','Professional Fees','Dog Sitting Supplies','Marketing','Training','Other ST Expense'],
 };
+
+// ════════════════════════════════════════════════════════════════
+//  TAX CONFIGURATION — update each April
+// ════════════════════════════════════════════════════════════════
+const TAX_CONFIG = {
+  2024: {
+    personalAllowance:  12570,
+    basicRateLimit:     50270,
+    higherRateLimit:    125140,
+    basicRate:          0.20,
+    higherRate:         0.40,
+    additionalRate:     0.45,
+    class4NIMain:       0.09,
+    class4NIUpper:      0.02,
+    class4NIThreshold:  12570,
+    class4NIUpperLimit: 50270,
+    class2NIAnnual:     179.40,
+    mileageRateFirst:   0.45,
+    mileageRateAfter:   0.25,
+    mileageThreshold:   10000,
+    slPlan1Threshold:   24990,
+    slPlan2Threshold:   27295,
+    slPlan4Threshold:   31395,
+    slRate:             0.09,
+  },
+  2025: {
+    personalAllowance:  12570,
+    basicRateLimit:     50270,
+    higherRateLimit:    125140,
+    basicRate:          0.20,
+    higherRate:         0.40,
+    additionalRate:     0.45,
+    class4NIMain:       0.09,
+    class4NIUpper:      0.02,
+    class4NIThreshold:  12570,
+    class4NIUpperLimit: 50270,
+    class2NIAnnual:     192.00,
+    mileageRateFirst:   0.45,
+    mileageRateAfter:   0.25,
+    mileageThreshold:   10000,
+    slPlan1Threshold:   26065,
+    slPlan2Threshold:   28470,
+    slPlan4Threshold:   32745,
+    slRate:             0.09,
+  },
+};
+
+function getTaxConfig() {
+  const ty = selectedTY();
+  return TAX_CONFIG[ty] || TAX_CONFIG[2024];
+}
 
 // ════════════════════════════════════════════════════════════════
 //  STATE
@@ -827,6 +782,8 @@ function inSelectedTY(ds){ const ty=selectedTY(),d=new Date(ds); return d>=taxYe
 function buildTaxYearSelect() {
   const sel = document.getElementById('taxYearSelect');
   if (!sel) return;
+  // Only build once — prevents resetting user's selection on re-render
+  if (sel.options.length > 0) return;
   const cur = dateToTY(new Date().toISOString().split('T')[0]);
   sel.innerHTML = [cur-1,cur,cur+1].map(y=>`<option value="${y}" ${y===cur?'selected':''}>${y}–${(y+1).toString().slice(-2)}</option>`).join('');
   sel.onchange = () => { renderSTTax(); renderSTOverview(); };
@@ -1308,9 +1265,14 @@ function setSTFilter(c){activeSTFilter=c;renderSTTransactions();}
 // ════════════════════════════════════════════════════════════════
 let editMileageId = null;
 
-// HMRC approved mileage rates 2024-25
-const MILEAGE_RATE_FIRST  = 0.45;  // first 10,000 miles
-const MILEAGE_RATE_AFTER  = 0.25;  // after 10,000
+// HMRC mileage rates — pulled from TAX_CONFIG per tax year
+function getMileageRates() {
+  const TC = getTaxConfig();
+  return { first: TC.mileageRateFirst, after: TC.mileageRateAfter, threshold: TC.mileageThreshold };
+}
+// Keep these as fallback constants for use before selectedTY() is available
+const MILEAGE_RATE_FIRST  = 0.45;
+const MILEAGE_RATE_AFTER  = 0.25;
 
 function getMileageSettings() {
   const ty = selectedTY();
@@ -1527,10 +1489,11 @@ function renderSTTaxST() {
   const mileageDed = getMileageDeduction();
   const totalExp = expenses + mileageDed;
   const profit   = income - totalExp;
-  const PA       = 12570;
+  const TC = getTaxConfig();
+  const PA       = TC.personalAllowance;
   const taxable  = Math.max(0, profit - PA);
-  const it       = taxable * 0.20;
-  const ni       = taxable * 0.09;
+  const it       = taxable * TC.basicRate;
+  const ni       = taxable * TC.class4NIMain;
   const totalTax = it + ni;
   const withheld = txns.filter(t => t.type === 'income' && t.taxWithheld).reduce((s,t) => s + (t.taxWithheld||0), 0);
 
@@ -1627,8 +1590,13 @@ function renderCombinedTax() {
 
   // ── Student loan ──
   const slPlan = (S.taxProfile||{}).sl || 'none';
-  const slThresholds = {plan1:24990, plan2:27295, plan4:31395, none:Infinity};
-  const slRate = slPlan==='none'?0:0.09;
+  const slThresholds = {
+    plan1: TC.slPlan1Threshold,
+    plan2: TC.slPlan2Threshold,
+    plan4: TC.slPlan4Threshold,
+    none:  Infinity
+  };
+  const slRate = slPlan==='none'?0:TC.slRate;
   const slThresh = slThresholds[slPlan]||Infinity;
   // ST total income for SL calc
   const stTxns   = txns.filter(t => t.mode==='soletrader');
@@ -1639,10 +1607,11 @@ function renderCombinedTax() {
   const totalIncomeForSL = empGross + Math.max(0,stProfit);
   const slRepayment = Math.max(0, totalIncomeForSL - slThresh) * slRate;
 
-  // ── UK 2024-25 bands ──
-  const PA  = 12570;
-  const BRL = 50270;
-  const HRL = 125140;
+  // ── Tax bands from config ──
+  const TC  = getTaxConfig();
+  const PA  = TC.personalAllowance;
+  const BRL = TC.basicRateLimit;
+  const HRL = TC.higherRateLimit;
 
   // PA tapering above £100k
   const totalGross  = empGross + Math.max(0,stProfit);
@@ -1660,21 +1629,21 @@ function renderCombinedTax() {
     const basic     = Math.min(taxable, basicLeft);
     const higher    = Math.min(Math.max(0, taxable-basic), higherBand);
     const addl      = Math.max(0, taxable-basic-higher);
-    return { tax: basic*0.20 + higher*0.40 + addl*0.45, basicUsed: basic };
+    return { tax: basic*TC.basicRate + higher*TC.higherRate + addl*TC.additionalRate, basicUsed: basic };
   }
 
   const empIT = calcIT(empTaxableIncome, 0);
   const stIT  = calcIT(stTaxableIncome, empIT.basicUsed);
 
   // ── Class 2 NI (flat rate for sole traders) ──
-  const class2NI = stProfit > 12570 ? 179.40 : 0; // 2024-25: £3.45/week × 52
+  const class2NI = stProfit > TC.class4NIThreshold ? TC.class2NIAnnual : 0;
 
   // ── Class 4 NI ──
   let class4NI = 0;
-  if(stProfit > 12570){
-    const main = Math.min(stProfit,50270) - 12570;
-    const upper= Math.max(0, stProfit-50270);
-    class4NI   = main*0.09 + upper*0.02;
+  if(stProfit > TC.class4NIThreshold){
+    const main = Math.min(stProfit, TC.class4NIUpperLimit) - TC.class4NIThreshold;
+    const upper= Math.max(0, stProfit - TC.class4NIUpperLimit);
+    class4NI   = main * TC.class4NIMain + upper * TC.class4NIUpper;
   }
 
   // ── Payments on account ──
@@ -2294,6 +2263,7 @@ buildTaxYearSelect();
 document.getElementById('taxRateSelect').onchange=()=>{renderSTTax();renderSTOverview();};
 renderPOverview();
 renderChecklist();
+
 </script>
 </body>
 </html>
