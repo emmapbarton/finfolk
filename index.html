@@ -84,6 +84,7 @@
 <div class="page" id="page-p-spending">
   <div class="page-title"><span class="mode-chip personal">Personal</span>Spending</div>
   <div class="page-sub">Personal income and expenses</div>
+  <div id="p-purchase-deduction-notice" style="display:none;font-size:13px;padding:8px 12px;background:var(--surface);border-radius:var(--r);margin-bottom:12px"></div>
   <div id="p-budget-bars" style="margin-bottom:16px"></div>
   <div class="flex-row" style="margin-bottom:14px">
     <div class="filter-row" id="p-cat-filters" style="margin-bottom:0"></div>
@@ -154,6 +155,7 @@
             <input type="checkbox" id="amort-toggle" onchange="toggleAmortisation()" style="width:15px;height:15px;accent-color:var(--accent)"> Include in 50/30/20
           </label>
           <button onclick="openAddPurchase()" class="btn-success btn-sm">+ Add purchase</button>
+          <button id="lp-view-toggle" onclick="toggleLPView()" class="btn-sm" style="background:var(--surface)">Deduct from income: Off</button>
         </div>
       </div>
       <div id="purchases-list"></div>
@@ -697,6 +699,7 @@ function freshState() {
     taxProfile: {},
     taxChecklist: {},
     amortiseInBuckets: false,
+    deductPurchasesFromIncome: false,
   };
 }
 
@@ -866,7 +869,9 @@ function renderPOverviewBuckets(txns, thisMonth) {
   const buckets = s.buckets||{};
   const steady = parseFloat(document.getElementById('budget-steady')?.value)||s.steady||0;
   const needs=s.needs??50, wants=s.wants??30, savings=s.savings??20;
-  const alloc = { needs: steady*(needs/100), wants: steady*(wants/100), savings: steady*(savings/100) };
+  const monthlyDed = getMonthlyPurchaseDeduction();
+  const effectiveSteady = Math.max(0, steady - monthlyDed);
+  const alloc = { needs: effectiveSteady*(needs/100), wants: effectiveSteady*(wants/100), savings: effectiveSteady*(savings/100) };
   const spend = { needs:0, wants:0, savings:0 };
   txns.filter(t=>t.type==='expense').forEach(t=>{
     const b=buckets[t.category]||'needs';
@@ -923,6 +928,18 @@ function renderPSpending() {
         </div>`;
       }).join('')+`</div>`;
   } else { document.getElementById('p-budget-bars').innerHTML=''; }
+
+  // Purchase deduction notice
+  const _ded = getMonthlyPurchaseDeduction();
+  const _dedEl = document.getElementById('p-purchase-deduction-notice');
+  if (_dedEl) {
+    if (_ded > 0) {
+      _dedEl.style.display = '';
+      _dedEl.innerHTML = `🏷 Large purchases deducted from monthly income: <strong style="color:var(--warn)">${fmt(_ded)}</strong> — your 50/30/20 is calculated on the remainder.`;
+    } else {
+      _dedEl.style.display = 'none';
+    }
+  }
 
   const tbody=document.getElementById('p-txn-body');
   const empty=document.getElementById('p-txn-empty');
@@ -1000,7 +1017,14 @@ function renderBudgetPlan() {
   }).reduce((s,t)=>s+t.amount,0);
 
   document.getElementById('budget-actual-income').textContent=`${fmt(personalIncome)} ${budgetPeriod==='monthly'?'this month':'this tax year'}`;
-  const planIncome=budgetPeriod==='annual'?(steady*12||personalIncome):(steady||personalIncome);
+  const rawPlanIncome=budgetPeriod==='annual'?(steady*12||personalIncome):(steady||personalIncome);
+  const monthlyPurchaseDed=getMonthlyPurchaseDeduction();
+  const periodPurchaseDed=budgetPeriod==='annual'?monthlyPurchaseDed*12:monthlyPurchaseDed;
+  const planIncome=Math.max(0,rawPlanIncome-periodPurchaseDed);
+  if(periodPurchaseDed>0){
+    const el=document.getElementById('budget-actual-income');
+    if(el)el.textContent=`${fmt(personalIncome)} ${budgetPeriod==='monthly'?'this month':'this tax year'} · −${fmt(periodPurchaseDed)} purchases = ${fmt(planIncome)} available`;
+  }
   const alloc={needs:planIncome*(needs/100),wants:planIncome*(wants/100),savings:planIncome*(savings/100)};
 
   // Cat limits from settings
@@ -2120,6 +2144,7 @@ function getAmortisedSpend(bucket){
 }
 function renderPurchasesTab(){
   const purchases=S.largePurchases||[];const t=document.getElementById('amort-toggle');if(t)t.checked=!!S.amortiseInBuckets;
+  const lpBtn=document.getElementById('lp-view-toggle');if(lpBtn){lpBtn.textContent=`Deduct from income: ${S.deductPurchasesFromIncome?'On':'Off'}`;lpBtn.style.background=S.deductPurchasesFromIncome?'var(--accent)':'var(--surface)';lpBtn.style.color=S.deductPurchasesFromIncome?'#fff':'var(--ink)';lpBtn.style.borderColor=S.deductPurchasesFromIncome?'var(--accent)':'var(--line)';}
   const now=new Date();const bucketColour={needs:'var(--accent)',wants:'var(--info)',savings:'var(--gold)'};const bucketLabels={needs:'🏠 Necessities',wants:'🎉 Wants',savings:'💰 Savings'};
   const listEl=document.getElementById('purchases-list');
   if(!purchases.length){listEl.innerHTML=`<div style="font-size:13px;color:var(--ink-2)">No large purchases yet.</div>`;}
@@ -2131,6 +2156,32 @@ function renderPurchasesTab(){
     ?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px"><div class="stat"><div class="stat-label">Active</div><div class="stat-value">${active.length}</div></div><div class="stat"><div class="stat-label">Monthly cost</div><div class="stat-value red">${fmt(totalMonthly)}</div></div><div class="stat"><div class="stat-label">To recover</div><div class="stat-value gold">${fmt(totalRemaining)}</div></div></div><div style="font-size:13px;color:var(--ink-2)">Saving ${fmt(totalMonthly)}/month will replenish your accounts.</div>`
     :`<div style="font-size:13px;color:var(--ink-2)">All purchases fully recovered 🎉</div>`;
 }
+
+function getMonthlyPurchaseDeduction() {
+  if (!S.deductPurchasesFromIncome) return 0;
+  const now = new Date();
+  return (S.largePurchases || []).filter(p => {
+    const paid = new Date(p.date);
+    const elapsed = (now.getFullYear() - paid.getFullYear()) * 12 + (now.getMonth() - paid.getMonth());
+    return elapsed >= 0 && elapsed < p.months;
+  }).reduce((sum, p) => sum + (p.amount / p.months), 0);
+}
+
+function toggleLPView() {
+  S.deductPurchasesFromIncome = !S.deductPurchasesFromIncome;
+  saveState();
+  const btn = document.getElementById('lp-view-toggle');
+  if (btn) {
+    btn.textContent = `Deduct from income: ${S.deductPurchasesFromIncome ? 'On' : 'Off'}`;
+    btn.style.background = S.deductPurchasesFromIncome ? 'var(--accent)' : 'var(--surface)';
+    btn.style.color = S.deductPurchasesFromIncome ? '#fff' : 'var(--ink)';
+    btn.style.borderColor = S.deductPurchasesFromIncome ? 'var(--accent)' : 'var(--line)';
+  }
+  renderBudgetPlan();
+  renderPOverview();
+  renderPSpending();
+}
+
 
 // ════════════════════════════════════════════════════════════════
 //  MONTHLY CHECKLIST
